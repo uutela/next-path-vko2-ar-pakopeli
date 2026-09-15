@@ -89,3 +89,8 @@ One line per thing noticed while working. Not implemented, not detoured into.
   `generatePuzzle`. The day an agent hands out a code whose leading zeros are
   meaningful — `"000042"` as distinct from `"42"` — the answer has to become a
   string and AC8 has to be revisited. Noted, not implemented.
+- The puzzle source is async, so it can hang as well as fail. `pair-flow.md`
+  AC23 covers a rejection with `PUZZLE_FAILED`, but a source that never
+  resolves leaves the player standing at the point with no puzzle and no
+  notice. A timeout belongs in the adapter, not the state machine. Noted, not
+  implemented.

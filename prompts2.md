@@ -194,3 +194,47 @@ future agent could get wrong. Eighteen tasks became seventeen.
 Filed in `INBOX.md` rather than built: the day an agent issues a code whose
 leading zeros are meaningful, the answer has to become a string and AC8 has to
 be revisited. Numeric comparison is right today and wrong then.
+
+---
+
+## The rounds
+
+### 9
+*In reply to: a choice between committing the current state first or starting round 1 straight away*
+
+> 1
+
+→ Two commits rather than one, because they are two different things: `8414791`
+is the lockfile as `npm install` left it — a single `hasInstallScript` line, no
+dependency changed — and `aaac0e1` is `looppi.md`, `prompts2.md` and the INBOX
+note. Committed on `main`, where this repository's whole history lives.
+
+### 10 — slash command
+> /goal every task in looppi.md is marked done, each having passed unit tests,
+> typecheck, audit and a web browser check; stop after 8 turns. Record findings
+> in INBOX.md and do not add new features.
+>
+> Re-read looppi.md from disk at the start of every round before picking a task —
+> it changes during the run. Follow its steps in order, one task per round.
+> AR panel behaviour cannot be verified in a browser; say so rather than claiming it.
+
+→ The loop started. One task per round, `looppi.md` re-read from disk each
+time, and the AR limit restated as an instruction rather than left in the file.
+
+### Round 1 — Prio 1, the pair-flow spec
+
+`specs/features/pair-flow.md`, 27 criteria, no code. Two things were checked
+rather than asserted: every AC appears in the testing strategy table (a loop
+over `AC1`..`AC27` found no gaps), and every coordinate fixture was run through
+the repo's own haversine — 19 m, 19 m, 2 m, 100 m and 22 m, each landing where
+the spec claims. A spec whose distances are wrong makes every test written from
+it wrong too.
+
+The shape the spec had to reach for: a drawn puzzle must outlive the screen
+that showed it, so `GameState` stops being four situations and becomes
+`{ screen, pairs, notice? }`. That is the largest change in the repo's history
+and the Risk section says so. `OPEN_PUZZLE` disappears — the shell asks the
+async source and dispatches `PUZZLE_DRAWN`, which is how an `await` stays out
+of a pure function.
+
+Verdict `APPROVED`. No browser check: nothing a browser can see changed.
