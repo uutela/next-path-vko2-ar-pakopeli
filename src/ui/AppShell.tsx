@@ -55,8 +55,23 @@ export function AppShell({
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  const playerRef = useRef<Coordinates>(undefined);
+  playerRef.current = player;
+
   const dispatch = useCallback((event: GameEvent) => {
-    setState((previous) => transition(previous, event, { points: pointsRef.current }));
+    const ctx = { points: pointsRef.current };
+    setState((previous) => transition(previous, event, ctx));
+
+    // Returning to the map re-asks where the player is standing. Proximity is
+    // only ever recomputed from a LOCATION_CHANGED, and a device that is not
+    // moving sends no more of them — so without this, someone who collected a
+    // puzzle and closed it stood on the answer point and was offered nothing.
+    // See specs/features/pair-flow.md AC29.
+    const backToMap = event.kind === 'CLOSE_PUZZLE' || event.kind === 'RESET';
+    const coordinates = playerRef.current;
+    if (backToMap && coordinates) {
+      setState((previous) => transition(previous, { kind: 'LOCATION_CHANGED', coordinates }, ctx));
+    }
   }, []);
 
   const collect = useCallback(

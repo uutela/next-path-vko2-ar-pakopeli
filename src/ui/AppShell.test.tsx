@@ -177,6 +177,25 @@ describe('AppShell', () => {
     expect(loads()).toBe(1);
   });
 
+  it('a stationary player is offered the answer point without moving again', async () => {
+    // Both points of the pair in one place — testing at a desk, which is how
+    // this was found. The position arrives once and never again.
+    const here: EscapePoint = { ...POINT, coordinates: INSIDE };
+    const alsoHere: EscapePoint = { ...ANSWER_POINT, coordinates: INSIDE };
+    const location = createMockLocationSource([INSIDE]);
+    setup({ seed: [here, alsoHere], location });
+
+    act(() => location.advance());
+    await waitFor(() => screen.getByText('Avaa tehtävä'));
+    act(() => screen.getByText('Avaa tehtävä').click());
+    await waitFor(() => screen.getByText('5 + 2 = ?'));
+
+    act(() => screen.getByText('Takaisin kartalle').click());
+
+    // No second advance: the player has not moved a metre.
+    await waitFor(() => expect(screen.getByText('Syötä koodi')).toBeTruthy());
+  });
+
   it('AC5: an empty store leaves the seed alone', async () => {
     setup();
 
