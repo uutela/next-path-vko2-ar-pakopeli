@@ -11,18 +11,25 @@ const markerCalls: Array<[number, number]> = [];
 /** Records what our component asks MapLibre's camera to look at. */
 const cameraCalls: Array<[number, number] | undefined> = [];
 
-vi.mock('@maplibre/maplibre-react-native', () => ({
-  Map: ({ children }: { children?: ReactNode }) =>
-    createElement('div', { 'data-testid': 'map-container' }, children),
-  Camera: ({ initialViewState }: { initialViewState?: { center?: [number, number] } }) => {
-    cameraCalls.push(initialViewState?.center);
-    return null;
-  },
-  Marker: ({ lngLat }: { lngLat: [number, number] }) => {
-    markerCalls.push(lngLat);
-    return createElement('div', { 'data-testid': 'marker' });
-  },
-}));
+vi.mock('@maplibre/maplibre-react-native', async () => {
+  const { useState } = await import('react');
+
+  return {
+    Map: ({ children }: { children?: ReactNode }) =>
+      createElement('div', { 'data-testid': 'map-container' }, children),
+    // Recorded once per *mount*, not per render: the camera takes an initial
+    // view state, so what matters is how often a new one is read, and that is
+    // what AC18 is about. A useState initialiser runs exactly once per mount.
+    Camera: ({ initialViewState }: { initialViewState?: { center?: [number, number] } }) => {
+      useState(() => cameraCalls.push(initialViewState?.center));
+      return null;
+    },
+    Marker: ({ lngLat }: { lngLat: [number, number] }) => {
+      markerCalls.push(lngLat);
+      return createElement('div', { 'data-testid': 'marker' });
+    },
+  };
+});
 
 const POINT_A: EscapePoint = {
   id: 'p1',
@@ -71,7 +78,33 @@ describe('Map', () => {
   it('AC14: the map centres where initialCentre says', () => {
     render(createElement(Map, { points: [POINT_A, POINT_B] }));
 
-    expect(cameraCalls).toEqual([initialCentre([POINT_A, POINT_B])]);
+    expect(cameraCalls).toEqual([initialCentre([POINT_A, POINT_B], undefined)]);
+  });
+
+  it('AC12: with a position known, the map centres on the player', () => {
+    const player = { latitude: 60.4, longitude: 25.1 };
+    render(createElement(Map, { points: [POINT_A, POINT_B], player }));
+
+    expect(cameraCalls).toEqual([[25.1, 60.4]]);
+  });
+
+  it('AC18: a position arriving after mount re-mounts the map, once', () => {
+    const player = { latitude: 60.4, longitude: 25.1 };
+    const view = render(createElement(Map, { points: [POINT_A, POINT_B] }));
+    expect(cameraCalls).toEqual([initialCentre([POINT_A, POINT_B], undefined)]);
+
+    view.rerender(createElement(Map, { points: [POINT_A, POINT_B], player }));
+    expect(cameraCalls).toEqual([initialCentre([POINT_A, POINT_B], undefined), [25.1, 60.4]]);
+
+    // Moving again does not re-centre: the key is the presence of a position,
+    // not the position itself.
+    view.rerender(
+      createElement(Map, {
+        points: [POINT_A, POINT_B],
+        player: { latitude: 60.5, longitude: 25.2 },
+      }),
+    );
+    expect(cameraCalls).toHaveLength(2);
   });
 
   it('AC6: an empty point list renders a map with no markers', () => {

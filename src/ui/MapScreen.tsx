@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Map } from './Map';
 import { visiblePoints } from '../domain/pairs';
-import type { EscapePoint, GameEvent, GameState } from '../domain/types';
+import type { Coordinates, EscapePoint, GameEvent, GameState } from '../domain/types';
 
 export interface MapScreenProps {
   state: GameState;
@@ -9,17 +9,19 @@ export interface MapScreenProps {
   onEvent: (event: GameEvent) => void;
   /** Pressing the offer at a puzzle point asks the source, which is async. */
   onCollect: (pairId: string) => void;
+  /** The player's last known position, so the map opens where they stand. */
+  player?: Coordinates;
 }
 
 /** The map, the offer for whatever point is in range, and the collected puzzles. */
-export function MapScreen({ state, points, onEvent, onCollect }: MapScreenProps) {
+export function MapScreen({ state, points, onEvent, onCollect, player }: MapScreenProps) {
   const { screen } = state;
   const near = screen.kind === 'NEAR' ? screen.point : undefined;
   const unsolved = state.pairs.filter((pair) => !pair.solved);
 
   return (
     <View style={styles.container}>
-      <Map points={visiblePoints(state, points)} />
+      <Map points={visiblePoints(state, points)} player={player} />
 
       {state.notice === undefined ? null : (
         <Text style={styles.notice} testID="notice">

@@ -17,16 +17,19 @@ import type { MapProps } from './Map';
  * Web map. Same props and same constants as the native one; only the library
  * differs.
  */
-export function Map({ points }: MapProps) {
+export function Map({ points, player }: MapProps) {
   return (
     <View style={styles.container}>
       <View style={styles.mapArea}>
         <MapGL
+          // See the comment in Map.tsx: initialViewState is read once, so the
+          // key is what lets a position arriving later open the map there.
+          key={player ? 'player' : 'points'}
           mapStyle={MAP_STYLE_URL}
           attributionControl={false}
           initialViewState={{
-            longitude: initialCentre(points)[0],
-            latitude: initialCentre(points)[1],
+            longitude: initialCentre(points, player)[0],
+            latitude: initialCentre(points, player)[1],
             zoom: MAP_ZOOM,
           }}
           // Explicit rather than `flex: 1`: react-map-gl renders a plain DOM

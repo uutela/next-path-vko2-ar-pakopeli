@@ -10,7 +10,7 @@ import type { AudioPlayer } from '../adapters/audio';
 import type { CameraAdapter } from '../adapters/camera';
 import type { PointStore } from '../adapters/pointStore';
 import type { PuzzleSource } from '../adapters/puzzleSource';
-import type { EscapePoint, GameEvent, GameState } from '../domain/types';
+import type { Coordinates, EscapePoint, GameEvent, GameState } from '../domain/types';
 
 export interface AppShellProps {
   seed: EscapePoint[];
@@ -42,6 +42,10 @@ export function AppShell({
 }: AppShellProps) {
   const [state, setState] = useState<GameState>(INITIAL);
   const [points, setPoints] = useState<EscapePoint[]>(seed);
+  // Kept here rather than in GameState: where the player is does not change
+  // what the game allows, only where the map opens. It never leaves the
+  // device. See specs/features/map-view.md AC12.
+  const [player, setPlayer] = useState<Coordinates>();
 
   // The point list arrives asynchronously, so it is read through a ref rather
   // than captured by the dispatch closure. `transition` keeps taking its
@@ -91,7 +95,11 @@ export function AppShell({
   }, [pointStore, seed]);
 
   useEffect(
-    () => location.watch((coordinates) => dispatch({ kind: 'LOCATION_CHANGED', coordinates })),
+    () =>
+      location.watch((coordinates) => {
+        setPlayer(coordinates);
+        dispatch({ kind: 'LOCATION_CHANGED', coordinates });
+      }),
     [location, dispatch],
   );
 
@@ -122,5 +130,13 @@ export function AppShell({
     );
   }
 
-  return <MapScreen state={state} points={points} onEvent={dispatch} onCollect={collect} />;
+  return (
+    <MapScreen
+      state={state}
+      points={points}
+      onEvent={dispatch}
+      onCollect={collect}
+      player={player}
+    />
+  );
 }
