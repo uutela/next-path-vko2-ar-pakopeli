@@ -2,8 +2,13 @@ import type { Puzzle } from './types';
 
 const MIN_OPERAND = 1;
 const MAX_OPERAND = 9;
-/** The largest answer is 18, so two characters is the whole input. */
-const MAX_INPUT_LENGTH = 2;
+/**
+ * An answer is a code of at most six digits — a maximum, not a length, so a
+ * shorter answer is a valid answer and nothing is zero-padded. The puzzle
+ * source refuses anything longer before the game sees it.
+ * See specs/features/puzzle.md AC12 and specs/features/pair-flow.md AC21.
+ */
+const MAX_INPUT_LENGTH = 6;
 const DIGITS_ONLY = /^\d+$/;
 
 function drawOperand(rng: () => number): number {
@@ -35,7 +40,7 @@ export function checkAnswer(puzzle: Puzzle, input: string): boolean {
   return Number.parseInt(trimmed, 10) === puzzle.answer;
 }
 
-/** Appends one digit to the typed input, refusing to grow past two. */
+/** Appends one digit to the typed input, refusing to grow past six. */
 export function appendDigit(input: string, digit: string): string {
   if (input.length >= MAX_INPUT_LENGTH) {
     return input;
