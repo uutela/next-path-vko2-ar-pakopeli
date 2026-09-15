@@ -285,3 +285,40 @@ describe('visiblePoints and actionablePoints', () => {
     expect(actionablePoints(SOLVED_A, ctx.points).map((p) => p.id)).toEqual(['b-puzzle']);
   });
 });
+
+describe('several pairs at once', () => {
+  it('AC6: collecting pair A does not reveal pair B’s answer point', () => {
+    const collectedA = transition(
+      EMPTY,
+      { kind: 'PUZZLE_DRAWN', pairId: 'a', puzzle: DRAWN_A },
+      ctx,
+    );
+
+    expect(visiblePoints(collectedA, ctx.points).map((p) => p.id)).toEqual([
+      'a-answer',
+      'a-puzzle',
+      'b-puzzle',
+    ]);
+    // Back to the map first: walking while reading the puzzle deliberately
+    // changes nothing, so the inertness has to be tested from the map.
+    const onMap = transition(collectedA, { kind: 'CLOSE_PUZZLE' }, ctx);
+
+    expect(at(onMap, { latitude: 60.1730708711, longitude: LON }).screen).toEqual({ kind: 'MAP' });
+  });
+
+  it('two pairs keep their own puzzles, and one answer does not open the other', () => {
+    const both: GameState = {
+      screen: { kind: 'ANSWER', pairId: 'b', input: '7' },
+      pairs: [
+        { pairId: 'a', puzzle: DRAWN_A, solved: false },
+        { pairId: 'b', puzzle: DRAWN_B, solved: false },
+      ],
+    };
+
+    // 7 answers pair a, not pair b: a wrong code clears the input.
+    const after = transition(both, { kind: 'SUBMIT' }, ctx);
+
+    expect(after.screen).toEqual({ kind: 'ANSWER', pairId: 'b', input: '' });
+    expect(after.pairs.every((pair) => !pair.solved)).toBe(true);
+  });
+});

@@ -1,6 +1,6 @@
 # Feature: Arithmetic puzzle
 
-**Status:** Draft
+**Status:** Done
 
 ## Problem Statement
 The panel needs a puzzle that is different each time but never hard: two

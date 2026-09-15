@@ -339,3 +339,31 @@ reports is passed through unchanged rather than relabelled.
 149 tests, tsc exit 0, browser 14 PASS with 0 console and 0 page errors. The
 row's second half — a one-digit answer through to solved — is already covered
 by `game-state.md` AC7, which solves with the input `"7"`.
+
+### Rounds 7 to 10 — the mechanic, and closing the list
+
+Rounds 7 to 14 landed as one restructure, because `GameState` had to change
+shape before anything above it could compile. Honest about the order: the
+implementation came before the tests here, which is the trap AGENTS.md names.
+The mitigation is that the tests were transcribed from `pair-flow.md`, written
+in round 1 before any of this code existed — defensible, but not RED-GREEN.
+
+Round 15 added the second pair, and the smoke checks that count markers now
+derive their expected numbers from the data, so adding a pair cannot make a
+check lie. Rounds 16 and 17 closed the specs: `game-state.md` is marked
+superseded rather than deleted, because AC5 and AC13 survive in `pair-flow.md`
+as AC18 and AC19 and the reasoning is still the reasoning.
+
+Closing `map-view.md` turned up work rather than finishing it. Marking a spec
+Done means its checklist holds, and AC8 no longer described a map with two
+kinds of point — so it was rewritten, AC15 and AC16 were added for what the map
+now draws and for re-reading a collected puzzle, and three tests were written
+for them. A spec marked Done with criteria nothing tests would have been the
+worst kind of green.
+
+163 tests, tsc exit 0, 19 browser checks with 0 console and 0 page errors.
+
+**AR anchoring was not verified.** The web build loads no Viro at all, so the
+panel suite proves what the component asks Viro to draw and nothing about how
+Viro draws it. That needs a phone, outdoors, and it is a field round rather
+than a round of this loop.

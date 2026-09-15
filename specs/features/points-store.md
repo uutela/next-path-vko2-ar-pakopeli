@@ -1,6 +1,6 @@
 # Feature: Point storage and admin editor
 
-**Status:** Draft
+**Status:** Done
 
 ## Problem Statement
 Points have to come from somewhere, and from two places at once: a file in

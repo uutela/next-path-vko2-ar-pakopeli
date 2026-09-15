@@ -49,15 +49,23 @@ Throughout, `POINT` is the seed point at `{ latitude: 60.1699, longitude: 24.938
 **When** the location source emits `INSIDE`
 **Then** exactly one element with the text `Avaa tehtävä` is present
 
-### AC3: Opening the puzzle shows the AR screen
-**Given** the state reached in AC2, a camera adapter reporting `granted`, and an `rng` scripted to `0.5` then `0.2`
-**When** the `Avaa tehtävä` element is pressed
-**Then** exactly one node reads `5 + 2 = ?`, and no node reads `Avaa tehtävä`
+### AC3: Collecting at the puzzle point shows the puzzle as plain text
+**Given** the state reached in AC2 and a puzzle source scripted to draw `5 + 2 = ?`
+**When** the `Avaa tehtävä` element is pressed and the draw resolves
+**Then** exactly one node reads `5 + 2 = ?`, no node reads `Avaa tehtävä`, and no camera preview is present
 
-### AC4: Solving the puzzle reaches the congratulation
+The source is asynchronous, so the puzzle arrives after the press rather than
+during it. And there is no camera here: the puzzle is read while walking to
+somewhere else, so it is ordinary text on every platform. See `pair-flow.md`.
+
+### AC4: Walking to the answer point and typing the code reaches the congratulation
 **Given** the state reached in AC3
-**When** the key labelled `7` is pressed and then the key labelled `OK`
+**When** the player returns to the map, walks into the answer point's radius, presses `Syötä koodi`, and presses `7` then `OK`
 **Then** exactly one node reads `Oikein! Laatikko aukesi.`
+
+The route is the feature: the puzzle is handed out at one point and answered
+at another, so this criterion walks between them rather than solving on the
+spot.
 
 ### AC5: Stored points are merged with the seed, and loaded once
 **Given** `seed = [POINT]` and a point store holding one point with `id: "p2"`

@@ -21,9 +21,13 @@ Lue tämä, tai `git log --oneline` — yksi rivi per kierros.
 | 5 | 5 | `Puzzle` → `{ text, answer }`, adapterin taakse | 145 | 0 | 14/14 | APPROVED |
 | 6 | 6 | 1–6 numeron sopimus lähteen rajalla | 149 | 0 | 14/14 | APPROVED |
 | – | – | Smoke kieltäytyy mittaamasta väärää projektia | 149 | 0 | vartija exit 1 | korjattu |
-| 7 | 7–14 | Pari-mekaniikka kokonaan: tilakone, kartta, pulmaruutu, AR-vastaus, selainkävely | **158** | 0 | **19/19** | APPROVED |
+| 7 | 7–14 | Pari-mekaniikka kokonaan: tilakone, kartta, pulmaruutu, AR-vastaus, selainkävely | **158** | 0 | **19/19** | DONE |
+| 8 | 15 | Toinen pari dataan, monen parin kriteerit | 160 | 0 | 19/19 | DONE |
+| 9 | 16 | Paneelin testit molempia toteutuksia vasten (31 testiä) | 160 | 0 | 19/19 | DONE — ankkurointia **ei todennettu** |
+| 10 | 17 | Speksit kiinni, `game-state.md` merkitty korvatuksi | **163** | 0 | 19/19 | DONE |
 
-**Jäljellä:** prio 15 (toinen pari), 16 (paneelin testit), 17 (speksit kiinni).
+**Kaikki 17 tehtävää valmiit.** 163 testiä, `npx tsc --noEmit` exit 0,
+19 selaintarkistusta, 0 konsoli- ja 0 sivuvirhettä.
 
 Selainajo kävelee nyt koko reitin: kaukana → pulmapiste → pulma tekstinä ilman
 näppäimistöä → kartalle, jossa vastauspiste on ilmestynyt → vastauspiste →

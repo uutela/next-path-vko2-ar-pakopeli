@@ -1,6 +1,6 @@
 # Feature: Map view
 
-**Status:** Draft
+**Status:** Done
 
 ## Problem Statement
 The player needs to see where the point is before walking to it. The map must
@@ -57,10 +57,33 @@ style URL from `src/config/map.ts`; neither declares its own.
 **When** it is searched for `apiKey`, `api_key`, `access_token` and `accessToken`
 **Then** there are no matches
 
-### AC8: Standing at a point offers to open the puzzle
-**Given** state `{ kind: 'NEAR', point: POINT }`
+### AC8: Standing at a point offers what that point is for
+**Given** state whose screen is `{ kind: 'NEAR', point }`
 **When** `MapScreen` is rendered
-**Then** exactly one pressable element with the text `Avaa tehtävä` is present, and pressing it dispatches `OPEN_PUZZLE` exactly once
+**Then** exactly one pressable element is present: `Avaa tehtävä` when `point.role` is `"puzzle"`, and `Syötä koodi` when it is `"answer"`
+
+Pressing `Avaa tehtävä` calls `onCollect(point.pairId)` and dispatches
+**nothing**: collecting is not a transition, because the source is
+asynchronous and the drawn puzzle comes back as its own event. Pressing
+`Syötä koodi` dispatches `OPEN_ANSWER` exactly once. See `pair-flow.md`.
+
+### AC15: The map draws what the player has earned
+**Given** a state with pair `"a"` collected and points `[PUZZLE_A, ANSWER_A, PUZZLE_B, ANSWER_B]`
+**When** `MapScreen` is rendered
+**Then** it draws three markers — both points of pair `"a"` and the puzzle point of pair `"b"` — and none for `b-answer`
+
+An answer point the player has not earned is not merely unmarked: it does not
+exist for them. The map draws `visiblePoints(state, points)` rather than the
+whole list.
+
+### AC16: A collected puzzle can be re-read from the map
+**Given** a state with pair `"a"` collected and unsolved
+**When** `MapScreen` is rendered
+**Then** exactly one element reads `Näytä pulma`, and pressing it dispatches `SHOW_PUZZLE` with `pairId: "a"` exactly once
+
+The puzzle is needed while standing at the answer point, which is somewhere
+else. Walking back to read it again would be the game punishing the player for
+having a memory.
 
 ### AC9: The offer is absent when no point is in range
 **Given** state `{ kind: 'MAP' }`
@@ -178,6 +201,10 @@ without rendering anything — the native map reads it through MapLibre's
 | `Map` | happy path | two points | rendered | camera `center` equals `initialCentre(points)` (AC14) |
 | `MapScreen` | happy path | `NEAR` | rendered | one pressable `Avaa tehtävä`; pressing dispatches one `OPEN_PUZZLE` (AC8) |
 | `MapScreen` | boundary | `MAP` | rendered | no `Avaa tehtävä` element (AC9) |
+
+| `MapScreen` | happy path | `NEAR` at an answer point | rendered | one `Syötä koodi`, press dispatches `OPEN_ANSWER` (AC8) |
+| `MapScreen` | happy path | pair `a` collected, two pairs of points | rendered | three markers, none for `b-answer` (AC15) |
+| `MapScreen` | happy path | pair `a` collected and unsolved | rendered | one `Näytä pulma`, press dispatches `SHOW_PUZZLE` `a` (AC16) |
 
 ## Spec Readiness checklist
 - [x] Every AC has a precise expected value — no "works correctly"

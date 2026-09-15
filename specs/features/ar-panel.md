@@ -1,6 +1,6 @@
 # Feature: AR puzzle panel
 
-**Status:** Draft
+**Status:** Done
 
 ## Problem Statement
 This is the feature the whole project exists for: standing at the point, the
@@ -23,7 +23,14 @@ The screen holds no game rules — it renders `GameState` and sends
 
 ## Acceptance Criteria
 
-Throughout, `PUZZLE_STATE` is `{ kind: 'PUZZLE', point: POINT, puzzle: { left: 5, right: 2, answer: 7 }, input: "" }`.
+Throughout, the panel is rendered with `screen` = `{ kind: 'ANSWER', pairId: "a", input: "" }` and `puzzle` = `{ text: "5 + 2 = ?", answer: 7 }`. The criteria below name this pair of props `PUZZLE_STATE` for continuity with the text that follows.
+
+**The panel serves the answer point.** Since `pair-flow.md`, the puzzle is
+handed out at one point and answered at another: the puzzle itself is read on
+an ordinary React Native screen, and this anchored panel is the keypad at the
+answer point. It therefore takes a screen and a puzzle rather than a state that
+carried both — the panel still holds no rules, which is why every criterion
+below survived the change unedited.
 
 ### AC1: Opening the puzzle starts the camera
 **Given** the camera adapter reports permission `granted` and state `PUZZLE_STATE`
