@@ -40,6 +40,50 @@ const DEG = 1 / 111_194.93;
 const INSIDE = { latitude: POINT.latitude + 19 * DEG, longitude: POINT.longitude };
 const FAR = { latitude: POINT.latitude + 100 * DEG, longitude: POINT.longitude };
 
+/**
+ * Refuse to measure a different application.
+ *
+ * The default port is Expo's, so a second checkout of this project answers on
+ * it just as readily as this one — and a fork of a fork looks identical from
+ * the outside. Every check in a whole session once ran against the week 1 repo
+ * on port 8081 while this project's own server had printed "Port 8081 is
+ * running ar-pakopeli in another window" and quietly skipped starting. The
+ * runs were green, red and reproducible, and none of them were about this
+ * code.
+ *
+ * Metro names its own project root when asked to resolve a module it does not
+ * have, which is the one thing the server will say about itself.
+ */
+const assertServerIsThisProject = async (url) => {
+  const here = process.cwd();
+  let root;
+  try {
+    const probe = await fetch(`${url}/index.bundle?platform=web&dev=true`);
+    const body = await probe.text();
+    root = JSON.parse(body).originModulePath?.replace(/\/+\.?$/, '');
+  } catch {
+    root = undefined;
+  }
+
+  if (root === here) {
+    console.log(`  server root: ${root}`);
+    return;
+  }
+
+  console.error(
+    root === undefined
+      ? `\nREFUSING TO RUN: could not establish which project answers ${url}.`
+      : `\nREFUSING TO RUN: ${url} is serving a different project.\n  it serves: ${root}\n  expected:  ${here}`,
+  );
+  console.error(`  Start this project's server first, on a port nothing else holds:`);
+  console.error(`    npx expo start --web --port 8082`);
+  console.error(`    node scripts/browser-smoke.mjs http://localhost:8082 .smoke\n`);
+  process.exit(1);
+};
+
+console.log(`→ checking who answers ${URL}`);
+await assertServerIsThisProject(URL);
+
 const results = [];
 const record = (id, expected, actual) =>
   results.push({ id, expected, actual, ok: expected === actual });
