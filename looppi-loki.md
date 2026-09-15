@@ -29,8 +29,9 @@ Lue tämä, tai `git log --oneline` — yksi rivi per kierros.
 | 12 | – | Siemenpisteiden nimet vastaamaan sijaintia (nimet olivat väärien paikkojen) | 166 | 0 | 19/19 | DONE |
 | 13 | 19 | Kartta avautuu pelaajan sijaintiin, ei ensimmäiseen pisteeseen | **170** | 0 | 19/19 | DONE |
 | 14 | 20 | Paikallaan seisova pelaaja saa tarjouksen ilman liikkumista | **171** | 0 | 19/19 | DONE |
+| 15 | 21 | Pulma-agentti: python + API, kytketty `PuzzleSource`n taakse | **180 + 38 pytest** | 0 | **20/20** | DONE |
 
-**Kaikki 20 tehtävää valmiit.** 171 testiä, `npx tsc --noEmit` exit 0,
+**Kaikki 21 tehtävää valmiit.** 180 vitest-testiä, 38 pytest-testiä, `npx tsc --noEmit` exit 0,
 19 selaintarkistusta, 0 konsoli- ja 0 sivuvirhettä — viimeinen ajo paikallisilla
 pisteillä, joiden pari on samassa paikassa. Se pari jumitti ennen kierrosta 11.
 

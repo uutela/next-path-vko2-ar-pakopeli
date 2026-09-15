@@ -116,7 +116,22 @@ const pageErrors = [];
 /** Vector tile requests. Zero of them means the map has no data to draw. */
 const tileRequests = [];
 page.on('response', (r) => /\.pbf(\?|$)/.test(r.url()) && tileRequests.push(r.status()));
-page.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()));
+/**
+ * The puzzle agent is optional and usually not running during a smoke run, and
+ * a browser logs its own error for a refused connection. That one message is
+ * counted separately and checked for below — everything else still fails the
+ * run, so a real console error cannot hide behind this.
+ */
+const refusedConnections = [];
+page.on('console', (m) => {
+  if (m.type() !== 'error') return;
+  const text = m.text();
+  if (text.includes('ERR_CONNECTION_REFUSED')) {
+    refusedConnections.push(text);
+    return;
+  }
+  consoleErrors.push(text);
+});
 page.on('pageerror', (e) => pageErrors.push(e.message));
 
 console.log(`→ opening ${URL}`);
@@ -237,6 +252,17 @@ if (offers > 0) {
   await page.screenshot({ path: `${OUT}/05-solved.png`, fullPage: true });
   record('ar-panel AC7 congratulation appears', 1, await page.getByText('Oikein! Laatikko aukesi.').count());
   record('ar-panel AC12 reset control appears', 1, await page.getByText('Aloita alusta').count());
+
+  // The agent writes the puzzles when it is running. When it is not, the game
+  // falls back to the local arithmetic generator and the browser logs the
+  // refused connection — the fallback is what keeps a player at a point from
+  // being stranded, so it is checked rather than tolerated.
+  const agentAbsent = refusedConnections.length > 0;
+  record(
+    'puzzle-agent absent: the local generator still produced the puzzle',
+    true,
+    !agentAbsent || /^\d+ \+ \d+ = \?$/.test(sum ?? ''),
+  );
 } else {
   record('ar-panel AC20 no camera on web', 0, 'not reached — no offer to click');
 }
