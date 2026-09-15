@@ -156,3 +156,26 @@ One line per thing noticed while working. Not implemented, not detoured into.
   moving — the distances are what the tests and the smoke run rely on, and a
   name that describes the point cannot be wrong about a place it does not
   claim.
+- **An "offline" test made a real network call with a real key, and passed for
+  the wrong reason.** `agents/puzzle-agent` tests deleted `GEMINI_API_KEY` with
+  `monkeypatch.delenv` and then imported the subagent — but importing it runs
+  `load_agent_environment()`, which loads `.env.local` from a parent directory
+  and puts the key straight back. The test only failed because the model
+  answered 404. The key is now forced absent at `api_key()`, the function that
+  reads it, and a separate test refuses socket connections for the whole
+  offline path. Anything in this kit that deletes env vars to simulate "no key"
+  has the same hole.
+- **`gemini-2.5-flash` answers `404 NOT_FOUND` for the key on this machine**,
+  with a message recommending the Interactions API. Seen once, by accident, in
+  the run above. The model is configurable through `GEMINI_MODEL` and the
+  default is unchanged, because choosing a model for someone else's account
+  from one error is guesswork. The agent has not been run against a live model.
+- **The agent endpoint is `localhost` and a phone is not the development
+  machine.** `src/config/agent.ts` points at `http://localhost:8002`, which is
+  right for the web build and wrong on a device, where it is the phone itself.
+  A device run needs the machine's address on the same network. The game does
+  not break — an unreachable agent falls back to the local generator and says
+  so — but the agent will simply never be used on a phone until this is set.
+- The kit's `agents/homework-coach-agent/memory/data/` is still not gitignored
+  by name; the pattern added for `agents/*/memory/data/*` now covers it, but
+  the example agent's own `.gitkeep` was committed before that rule existed.

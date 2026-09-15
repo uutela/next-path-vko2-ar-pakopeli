@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "issued_puzzle",
+  "description": "A puzzle the agent has handed out. Kept so the next one is not a repeat of it.",
+  "type": "object",
+  "required": ["id", "text", "answer", "issued_at"],
+  "properties": {
+    "id": { "type": "string", "description": "uuid4" },
+    "text": { "type": "string", "description": "The puzzle as the player reads it, in Finnish" },
+    "answer": { "type": "integer", "minimum": 0, "maximum": 999999 },
+    "issued_at": { "type": "string", "description": "ISO 8601 UTC" },
+    "attempts": { "type": "integer", "description": "Generation attempts this puzzle cost" }
+  },
+  "additionalProperties": false
+}

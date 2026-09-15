@@ -30,3 +30,8 @@ src/data/points.local.json
 # Generated from node_modules by postinstall
 public/maplibre-gl-worker.mjs
 public/maplibre-gl-shared.mjs
+
+# Agent virtualenvs and the puzzles an agent has handed out
+agents/*/.venv/
+agents/*/memory/data/*
+!agents/*/memory/data/.gitkeep

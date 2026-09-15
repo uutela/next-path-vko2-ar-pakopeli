@@ -5,7 +5,9 @@ import * as Location from 'expo-location';
 import { useMemo } from 'react';
 import { AppShell } from './src/ui/AppShell';
 import { createPointStore } from './src/adapters/pointStore';
+import { createAgentPuzzleSource } from './src/adapters/agentPuzzleSource';
 import { createLocalPuzzleSource } from './src/adapters/puzzleSource';
+import { PUZZLE_AGENT_ENDPOINT, PUZZLE_AGENT_TIMEOUT_MS } from './src/config/agent';
 import seedPoints from './src/data/points.json';
 import localPoints from './src/data/points.local.json';
 import { composeSeed } from './src/domain/points';
@@ -75,8 +77,20 @@ export default function App() {
 
   const location = useMemo(() => createLocationSource(createExpoPositionProvider()), []);
   const pointStore = useMemo(() => createPointStore(AsyncStorage), []);
-  // One source, created once. The agent implementation replaces this line.
-  const puzzleSource = useMemo(() => createLocalPuzzleSource(Math.random), []);
+  // The agent writes the puzzles; the arithmetic generator is what the game
+  // falls back to when the agent refuses or is not running. A refusal is
+  // reported rather than swallowed — a fallback nobody can see is
+  // indistinguishable from an agent that works.
+  const puzzleSource = useMemo(
+    () =>
+      createAgentPuzzleSource({
+        endpoint: PUZZLE_AGENT_ENDPOINT,
+        fallback: createLocalPuzzleSource(Math.random),
+        timeoutMs: PUZZLE_AGENT_TIMEOUT_MS,
+        report: (reason) => console.warn('[puzzle-agent]', reason),
+      }),
+    [],
+  );
   const audio = useMemo<AudioPlayer>(() => ({ play: () => fanfarePlayer.play() }), []);
 
   const camera = useMemo<CameraAdapter>(
