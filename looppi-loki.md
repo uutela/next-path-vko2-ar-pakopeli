@@ -25,9 +25,11 @@ Lue tämä, tai `git log --oneline` — yksi rivi per kierros.
 | 8 | 15 | Toinen pari dataan, monen parin kriteerit | 160 | 0 | 19/19 | DONE |
 | 9 | 16 | Paneelin testit molempia toteutuksia vasten (31 testiä) | 160 | 0 | 19/19 | DONE — ankkurointia **ei todennettu** |
 | 10 | 17 | Speksit kiinni, `game-state.md` merkitty korvatuksi | **163** | 0 | 19/19 | DONE |
+| 11 | 18 | Kerätty pulmapiste lakkaa tarjoamasta — ei enää varjosta vastauspistettään | **166** | 0 | 19/19 | DONE |
 
-**Kaikki 17 tehtävää valmiit.** 163 testiä, `npx tsc --noEmit` exit 0,
-19 selaintarkistusta, 0 konsoli- ja 0 sivuvirhettä.
+**Kaikki 18 tehtävää valmiit.** 166 testiä, `npx tsc --noEmit` exit 0,
+19 selaintarkistusta, 0 konsoli- ja 0 sivuvirhettä — viimeinen ajo paikallisilla
+pisteillä, joiden pari on samassa paikassa. Se pari jumitti ennen kierrosta 11.
 
 Selainajo kävelee nyt koko reitin: kaukana → pulmapiste → pulma tekstinä ilman
 näppäimistöä → kartalle, jossa vastauspiste on ilmestynyt → vastauspiste →

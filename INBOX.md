@@ -134,3 +134,14 @@ One line per thing noticed while working. Not implemented, not detoured into.
   The first also removes an oddity that exists today — standing at a collected
   puzzle point still offers `Avaa tehtävä`, which re-shows the puzzle rather
   than collecting anything.
+- ~~RESOLVED~~ The shadowing above is fixed: `actionablePoints` now drops the
+  puzzle point of a pair whose puzzle has been drawn (`pair-flow.md` AC28).
+  Proven by the browser run that previously timed out — it walks a pair whose
+  two points share a location through to the congratulation.
+- `AppShell.collect` checks `progressFor` before asking the source, which no
+  longer prevents anything: a collected puzzle point is not actionable, so the
+  callback cannot fire for a known pair. It also never protected against the
+  case that would matter — two taps before the state updates both see no
+  progress and both call `draw`. Correctness holds either way, because
+  `transition` keeps the first puzzle (AC4); the cost is one wasted call, which
+  will be a network round trip once the source is an agent. Noted, not changed.

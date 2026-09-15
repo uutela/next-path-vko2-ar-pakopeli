@@ -322,3 +322,35 @@ describe('several pairs at once', () => {
     expect(after.pairs.every((pair) => !pair.solved)).toBe(true);
   });
 });
+
+describe('a puzzle point that has already given its puzzle', () => {
+  it('AC28: it is no longer actionable', () => {
+    expect(actionablePoints(COLLECTED_A, ctx.points).map((p) => p.id)).toEqual([
+      'a-answer',
+      'b-puzzle',
+    ]);
+  });
+
+  it('AC28: standing there offers nothing', () => {
+    expect(at(COLLECTED_A, NEAR_PUZZLE_A).screen).toEqual({ kind: 'MAP' });
+  });
+
+  it('AC28: it no longer shadows its own answer point at the same distance', () => {
+    // Both points of pair "a" in one place, and the puzzle point sorted
+    // first — the real seed is p1/p2, which is exactly this order. With the
+    // ids the other way round the tie resolves in the answer point's favour
+    // by accident, and the test proves nothing.
+    const samePlace = [
+      { ...PUZZLE_A, id: 'p1', coordinates: PUZZLE_A.coordinates },
+      { ...ANSWER_A, id: 'p2', coordinates: PUZZLE_A.coordinates },
+    ];
+
+    const state = transition(
+      COLLECTED_A,
+      { kind: 'LOCATION_CHANGED', coordinates: NEAR_PUZZLE_A },
+      { points: samePlace },
+    );
+
+    expect(state.screen).toEqual({ kind: 'NEAR', point: samePlace[1] });
+  });
+});
