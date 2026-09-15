@@ -1,7 +1,7 @@
 [
   {
     "id": "p1",
-    "name": "Senaatintori",
+    "name": "Demoreitti A – tehtävä",
     "coordinates": { "latitude": 60.1699, "longitude": 24.9384 },
     "radiusMeters": 20,
     "role": "puzzle",
@@ -9,7 +9,7 @@
   },
   {
     "id": "p2",
-    "name": "Tuomiokirkon portaat",
+    "name": "Demoreitti A – vastaus",
     "coordinates": { "latitude": 60.1710, "longitude": 24.9384 },
     "radiusMeters": 20,
     "role": "answer",
@@ -17,7 +17,7 @@
   },
   {
     "id": "p3",
-    "name": "Kauppatori",
+    "name": "Demoreitti B – tehtävä",
     "coordinates": { "latitude": 60.1680, "longitude": 24.9384 },
     "radiusMeters": 20,
     "role": "puzzle",
@@ -25,7 +25,7 @@
   },
   {
     "id": "p4",
-    "name": "Kauppatorin laituri",
+    "name": "Demoreitti B – vastaus",
     "coordinates": { "latitude": 60.1670, "longitude": 24.9384 },
     "radiusMeters": 20,
     "role": "answer",

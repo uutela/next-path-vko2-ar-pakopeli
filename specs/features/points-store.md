@@ -38,8 +38,22 @@ no storage argument. That cannot be tested against a fake without mocking the
 AsyncStorage module, which would have forced the package to be installed for
 the sake of the tests alone.
 
-`src/data/points.json` holds the committed seed — a public square, chosen
-because the repository is public. `src/data/points.local.json` holds points
+`src/data/points.json` holds the committed seed. Its points are named
+`Demoreitti A/B – tehtävä/vastaus`, which says what they are and claims nothing
+else.
+
+They were previously named `Senaatintori`, `Tuomiokirkon portaat`, `Kauppatori`
+and `Kauppatorin laituri`, and none of them was at the place it named. The
+coordinates came from week 1's test fixtures — a number chosen to make a
+distance assertion exact — and the landmark names were attached afterwards. The
+first point is roughly 800 m from the real Senate Square, near Mannerheimintie;
+the rest were derived by adding metres to that wrong origin, so their names
+were inventions on top of an invention.
+
+Reported from the map by someone who recognised the street. The names are now
+the thing that changed, not the coordinates: the distances are what the tests
+and the smoke run rely on, and a name that describes the point cannot be wrong
+about a place it does not claim. `src/data/points.local.json` holds points
 that must not be committed, and is gitignored and created empty by
 `postinstall`; the root `App.tsx` merges it over the seed with the same
 `mergePoints` rule, so a matching id replaces and any other id adds. A point is

@@ -145,3 +145,14 @@ One line per thing noticed while working. Not implemented, not detoured into.
   progress and both call `draw`. Correctness holds either way, because
   `transition` keeps the first puzzle (AC4); the cost is one wasted call, which
   will be a network round trip once the source is an agent. Noted, not changed.
+- ~~RESOLVED~~ **Three seed points were named after places they were not at.**
+  `points.json` called its first point `Senaatintori`, but the coordinates came
+  from a week 1 test fixture — a number chosen to make a distance assertion
+  exact — roughly 800 m from the real Senate Square, near Mannerheimintie. The
+  points added in round 15 were derived by adding metres to that wrong origin
+  and given landmark names of their own, so the invention compounded. Found by
+  someone who recognised the street on the map, not by any test: no criterion
+  can check that a name matches a place. Resolved by renaming rather than
+  moving — the distances are what the tests and the smoke run rely on, and a
+  name that describes the point cannot be wrong about a place it does not
+  claim.
