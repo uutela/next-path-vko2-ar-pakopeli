@@ -34,28 +34,52 @@ export interface Puzzle {
   answer: number;
 }
 
+/** A pair the player has collected: the puzzle drawn for it, and whether it is solved. */
+export interface PairProgress {
+  pairId: string;
+  puzzle: Puzzle;
+  solved: boolean;
+}
+
 /**
- * The four situations the game can be in. A discriminated union, so the
- * compiler forces every state to be handled and no state carries a field that
- * does not belong to it. See specs/features/game-state.md.
+ * What the player is looking at. A screen names a pair rather than carrying
+ * it, because the puzzle outlives the screen: it is read at one point and
+ * answered at another. See specs/features/pair-flow.md.
  */
-export type GameState =
+export type Screen =
   | { kind: 'MAP' }
   | { kind: 'NEAR'; point: EscapePoint }
-  | { kind: 'PUZZLE'; point: EscapePoint; puzzle: Puzzle; input: string }
-  | { kind: 'SOLVED'; point: EscapePoint };
+  | { kind: 'PUZZLE'; pairId: string }
+  | { kind: 'ANSWER'; pairId: string; input: string }
+  | { kind: 'SOLVED'; pairId: string };
+
+/**
+ * Progress, with a screen on top. `pairs` is both: a pair absent from it has
+ * not been collected, and a pair present in it is never drawn again.
+ */
+export interface GameState {
+  screen: Screen;
+  pairs: PairProgress[];
+  notice?: string;
+}
 
 /** Everything that can happen to the game. */
 export type GameEvent =
   | { kind: 'LOCATION_CHANGED'; coordinates: Coordinates }
-  | { kind: 'OPEN_PUZZLE' }
+  | { kind: 'PUZZLE_DRAWN'; pairId: string; puzzle: Puzzle }
+  | { kind: 'PUZZLE_FAILED' }
+  | { kind: 'SHOW_PUZZLE'; pairId: string }
+  | { kind: 'CLOSE_PUZZLE' }
+  | { kind: 'OPEN_ANSWER' }
   | { kind: 'DIGIT_PRESSED'; digit: string }
   | { kind: 'CLEAR' }
   | { kind: 'SUBMIT' }
   | { kind: 'RESET' };
 
-/** What a transition needs from outside itself. Both are created once. */
+/**
+ * What a transition needs from outside itself. No `rng`: drawing a puzzle is
+ * asynchronous and lives in the shell, which sends the result in as an event.
+ */
 export interface TransitionContext {
   points: EscapePoint[];
-  rng: () => number;
 }

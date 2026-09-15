@@ -23,27 +23,33 @@ const POINT: EscapePoint = {
 describe('MapScreen', () => {
   it('AC8: standing at a point offers to open the puzzle', () => {
     const events: GameEvent[] = [];
+    const collected: string[] = [];
 
     render(
       createElement(MapScreen, {
-        state: { kind: 'NEAR', point: POINT },
+        state: { screen: { kind: 'NEAR', point: POINT }, pairs: [] },
         points: [POINT],
         onEvent: (event: GameEvent) => events.push(event),
+        onCollect: (pairId: string) => collected.push(pairId),
       }),
     );
 
     const button = screen.getByText('Avaa tehtävä');
     button.click();
 
-    expect(events).toEqual([{ kind: 'OPEN_PUZZLE' }]);
+    // Collecting is not a transition: the source is asked first, and the
+    // drawn puzzle comes back as an event. See specs/features/pair-flow.md.
+    expect(events).toEqual([]);
+    expect(collected).toEqual(['a']);
   });
 
   it('AC9: the offer is absent when no point is in range', () => {
     render(
       createElement(MapScreen, {
-        state: { kind: 'MAP' },
+        state: { screen: { kind: 'MAP' }, pairs: [] },
         points: [POINT],
         onEvent: () => undefined,
+        onCollect: () => undefined,
       }),
     );
 

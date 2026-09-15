@@ -2,7 +2,7 @@ import { ViroFlexView, ViroMaterials, ViroNode, ViroText } from '@reactvision/re
 import { useEffect, useRef } from 'react';
 import { FANFARE } from '../adapters/audio';
 import type { AudioPlayer } from '../adapters/audio';
-import type { GameEvent, GameState } from '../domain/types';
+import type { GameEvent, Puzzle, Screen } from '../domain/types';
 
 /**
  * Viro lays out in metres of world space, not React Native points, and only
@@ -29,7 +29,10 @@ const KEY_ROWS = [
 ] as const;
 
 export interface PuzzlePanelProps {
-  state: Extract<GameState, { kind: 'PUZZLE' } | { kind: 'SOLVED' }>;
+  /** The answer screen, or the congratulation once the pair is solved. */
+  screen: Extract<Screen, { kind: 'ANSWER' } | { kind: 'SOLVED' }>;
+  /** The puzzle this pair was given. The panel never draws one itself. */
+  puzzle: Puzzle;
   onEvent: (event: GameEvent) => void;
   audio: AudioPlayer;
 }
@@ -45,17 +48,18 @@ function eventForKey(label: string): GameEvent {
 }
 
 /** The anchored panel: puzzle text, the typed input, and the keypad. */
-export function PuzzlePanel({ state, onEvent, audio }: PuzzlePanelProps) {
+export function PuzzlePanel({ screen, puzzle, onEvent, audio }: PuzzlePanelProps) {
+  const input = screen.kind === 'ANSWER' ? screen.input : '';
   const fanfarePlayed = useRef(false);
 
   useEffect(() => {
-    if (state.kind === 'SOLVED' && !fanfarePlayed.current) {
+    if (screen.kind === 'SOLVED' && !fanfarePlayed.current) {
       fanfarePlayed.current = true;
       audio.play(FANFARE);
     }
-  }, [state.kind, audio]);
+  }, [screen.kind, audio]);
 
-  if (state.kind === 'SOLVED') {
+  if (screen.kind === 'SOLVED') {
     return (
       <ViroNode position={[0, 0, -PANEL_DISTANCE_METRES]}>
         <ViroFlexView viroTag="panel" materials={['puzzlePanel']} style={panel} />
@@ -76,12 +80,12 @@ export function PuzzlePanel({ state, onEvent, audio }: PuzzlePanelProps) {
     <ViroNode position={[0, 0, -PANEL_DISTANCE_METRES]}>
       <ViroFlexView viroTag="panel" materials={['puzzlePanel']} style={panel} />
       <ViroText
-        text={state.puzzle.text}
+        text={puzzle.text}
         position={[0, 0.7, LAYER]}
         style={title}
       />
       <ViroFlexView viroTag="input-display" position={[0, 0.44, LAYER]} style={display}>
-        <ViroText text={state.input} style={title} />
+        <ViroText text={input} style={title} />
       </ViroFlexView>
       {KEY_ROWS.map((row, rowIndex) => (
         <ViroNode

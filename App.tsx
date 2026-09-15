@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { useMemo } from 'react';
 import { AppShell } from './src/ui/AppShell';
 import { createPointStore } from './src/adapters/pointStore';
+import { createLocalPuzzleSource } from './src/adapters/puzzleSource';
 import seedPoints from './src/data/points.json';
 import localPoints from './src/data/points.local.json';
 import { composeSeed } from './src/domain/points';
@@ -74,6 +75,8 @@ export default function App() {
 
   const location = useMemo(() => createLocationSource(createExpoPositionProvider()), []);
   const pointStore = useMemo(() => createPointStore(AsyncStorage), []);
+  // One source, created once. The agent implementation replaces this line.
+  const puzzleSource = useMemo(() => createLocalPuzzleSource(Math.random), []);
   const audio = useMemo<AudioPlayer>(() => ({ play: () => fanfarePlayer.play() }), []);
 
   const camera = useMemo<CameraAdapter>(
@@ -93,7 +96,7 @@ export default function App() {
       location={location}
       audio={audio}
       camera={camera}
-      rng={Math.random}
+      puzzleSource={puzzleSource}
     />
   );
 }

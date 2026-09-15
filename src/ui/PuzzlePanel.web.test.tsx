@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { createElement } from 'react';
 import { KEY_MIN_SIZE, PuzzlePanel } from './PuzzlePanel.web';
-import { PUZZLE_STATE, describePanelBehaviour } from './panelBehaviour';
+import { ANSWER_SCREEN, describePanelBehaviour } from './panelBehaviour';
 
 // No Viro mock here, and that is the point: the web panel is ordinary React
 // Native views, rendered through react-native-web.
@@ -13,7 +13,8 @@ describe('PuzzlePanel (web overlay) sizing', () => {
 
     render(
       createElement(PuzzlePanel, {
-        state: PUZZLE_STATE,
+        screen: ANSWER_SCREEN,
+        puzzle: { text: '5 + 2 = ?', answer: 7 },
         onEvent: () => undefined,
         audio: { play: () => undefined },
       }),
