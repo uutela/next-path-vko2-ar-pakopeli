@@ -84,3 +84,8 @@ One line per thing noticed while working. Not implemented, not detoured into.
   `./maplibre-gl-shared.mjs`, and a module worker whose sibling import cannot
   resolve dies just as silently. The map now draws streets, buildings and
   labels, and the smoke run is green on tiles.
+- Answers are compared as numbers (`checkAnswer` parses base 10), which is why
+  `puzzle.md` AC8 accepts `"07"` for 7. That is right while answers come from
+  `generatePuzzle`. The day an agent hands out a code whose leading zeros are
+  meaningful — `"000042"` as distinct from `"42"` — the answer has to become a
+  string and AC8 has to be revisited. Noted, not implemented.
