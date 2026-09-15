@@ -3,7 +3,7 @@ import { createElement, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { ArScreen } from './ArScreen';
 import type { CameraAdapter, CameraPermission } from '../adapters/camera';
-import type { EscapePoint, GameState } from '../domain/types';
+import type { EscapePoint, Puzzle, Screen } from '../domain/types';
 
 /**
  * Faithful to two behaviours read out of ViroARSceneNavigator's own source,
@@ -54,12 +54,13 @@ const POINT: EscapePoint = {
   pairId: 'a',
 };
 
-const PUZZLE_STATE = {
-  kind: 'PUZZLE',
-  point: POINT,
-  puzzle: { text: '5 + 2 = ?', answer: 7 },
+const DRAWN: Puzzle = { text: '5 + 2 = ?', answer: 7 };
+
+const ANSWER_SCREEN = {
+  kind: 'ANSWER',
+  pairId: 'a',
   input: '',
-} satisfies Extract<GameState, { kind: 'PUZZLE' }>;
+} satisfies Extract<Screen, { kind: 'ANSWER' }>;
 
 function cameraAdapter(permission: CameraPermission) {
   const requests: number[] = [];
@@ -76,7 +77,8 @@ describe('ArScreen', () => {
 
     render(
       createElement(ArScreen, {
-        state: PUZZLE_STATE,
+        screen: ANSWER_SCREEN,
+        puzzle: DRAWN,
         onEvent: () => undefined,
         audio: { play: () => undefined },
         camera,
@@ -91,7 +93,8 @@ describe('ArScreen', () => {
 
     render(
       createElement(ArScreen, {
-        state: PUZZLE_STATE,
+        screen: ANSWER_SCREEN,
+        puzzle: DRAWN,
         onEvent: () => undefined,
         audio: { play: () => undefined },
         camera,
@@ -105,7 +108,8 @@ describe('ArScreen', () => {
   it('AC16: the panel inside the AR scene sees the current state', () => {
     const { camera } = cameraAdapter('granted');
     const props = (input: string) => ({
-      state: { ...PUZZLE_STATE, input },
+      screen: { ...ANSWER_SCREEN, input },
+      puzzle: DRAWN,
       onEvent: () => undefined,
       audio: { play: () => undefined },
       camera,
@@ -124,7 +128,8 @@ describe('ArScreen', () => {
 
     render(
       createElement(ArScreen, {
-        state: PUZZLE_STATE,
+        screen: ANSWER_SCREEN,
+        puzzle: DRAWN,
         onEvent: () => undefined,
         audio: { play: () => undefined },
         camera,

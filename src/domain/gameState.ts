@@ -1,14 +1,19 @@
 import { distanceMeters, isWithinRadius } from './distance';
-import { appendDigit, checkAnswer, generatePuzzle } from './puzzle';
+import { actionablePoints, progressFor } from './pairs';
+import { appendDigit, checkAnswer } from './puzzle';
 import type {
   Coordinates,
   EscapePoint,
   GameEvent,
   GameState,
+  PairProgress,
+  Screen,
   TransitionContext,
 } from './types';
 
-/** The point in range whose centre is closest, or undefined if none is. */
+const DRAW_FAILED = 'Tehtävän haku epäonnistui. Yritä uudelleen.';
+
+/** The actionable point in range whose centre is closest, or undefined. */
 function nearestPointInRange(
   coordinates: Coordinates,
   points: EscapePoint[],
@@ -30,60 +35,115 @@ function nearestPointInRange(
   return nearest;
 }
 
+/** The same progress with one pair replaced. Never mutates. */
+function withPair(pairs: PairProgress[], pairId: string, change: (p: PairProgress) => PairProgress) {
+  return pairs.map((pair) => (pair.pairId === pairId ? change(pair) : pair));
+}
+
+/** A state with a new screen, keeping progress and dropping any stale notice. */
+function showing(state: GameState, screen: Screen): GameState {
+  return { screen, pairs: state.pairs };
+}
+
 /**
- * The only place a game rule lives. Pure: no clock, no network, no GPS.
- * Events that do not apply to the current state return it unchanged.
- * See specs/features/game-state.md.
+ * The only place a game rule lives. Pure: no clock, no network, no GPS, and
+ * no randomness — a puzzle is drawn outside and arrives as an event, because
+ * the source is asynchronous and a pure function cannot await.
+ * See specs/features/pair-flow.md.
  */
 export function transition(
   state: GameState,
   event: GameEvent,
   ctx: TransitionContext,
 ): GameState {
-  if (event.kind === 'RESET') {
-    return { kind: 'MAP' };
-  }
+  switch (event.kind) {
+    case 'RESET':
+      // A reset walks the same route again from nothing: progress lives in
+      // memory and this is how it ends. See AC25.
+      return { screen: { kind: 'MAP' }, pairs: [] };
 
-  switch (state.kind) {
-    case 'MAP':
-    case 'NEAR': {
-      if (event.kind === 'LOCATION_CHANGED') {
-        const point = nearestPointInRange(event.coordinates, ctx.points);
-        return point ? { kind: 'NEAR', point } : { kind: 'MAP' };
+    case 'LOCATION_CHANGED': {
+      // An open input survives the walk: GPS wobble must not close the panel
+      // mid-answer. See AC18.
+      if (state.screen.kind === 'ANSWER' || state.screen.kind === 'PUZZLE') {
+        return state;
       }
-      if (state.kind === 'NEAR' && event.kind === 'OPEN_PUZZLE') {
-        return {
-          kind: 'PUZZLE',
-          point: state.point,
-          puzzle: generatePuzzle(ctx.rng),
-          input: '',
-        };
+      if (state.screen.kind === 'SOLVED') {
+        return state;
       }
-      return state;
+      const point = nearestPointInRange(
+        event.coordinates,
+        actionablePoints(state, ctx.points),
+      );
+      return showing(state, point ? { kind: 'NEAR', point } : { kind: 'MAP' });
     }
 
-    case 'PUZZLE': {
-      switch (event.kind) {
-        case 'DIGIT_PRESSED':
-          return { ...state, input: appendDigit(state.input, event.digit) };
-        case 'CLEAR':
-          // An already empty input is returned as-is, so React sees no change.
-          return state.input === '' ? state : { ...state, input: '' };
-        case 'SUBMIT':
-          if (state.input === '') {
-            return state;
-          }
-          return checkAnswer(state.puzzle, state.input)
-            ? { kind: 'SOLVED', point: state.point }
-            : { ...state, input: '' };
-        default:
-          // A puzzle stays open when the player drifts out of range: GPS
-          // wobble would otherwise close the panel mid-answer. See AC5.
-          return state;
-      }
+    case 'PUZZLE_DRAWN': {
+      // Drawn once per pair and kept. A code that changed while the player
+      // walked to the answer point would be unanswerable. See AC4.
+      const known = progressFor(state, event.pairId);
+      const pairs = known
+        ? state.pairs
+        : [...state.pairs, { pairId: event.pairId, puzzle: event.puzzle, solved: false }];
+
+      return { screen: { kind: 'PUZZLE', pairId: event.pairId }, pairs };
     }
 
-    case 'SOLVED':
-      return state;
+    case 'PUZZLE_FAILED':
+      return { ...state, notice: DRAW_FAILED };
+
+    case 'SHOW_PUZZLE':
+      return progressFor(state, event.pairId) === undefined
+        ? state
+        : showing(state, { kind: 'PUZZLE', pairId: event.pairId });
+
+    case 'CLOSE_PUZZLE':
+      return state.screen.kind === 'PUZZLE' ? showing(state, { kind: 'MAP' }) : state;
+
+    case 'OPEN_ANSWER': {
+      const { screen } = state;
+      if (screen.kind !== 'NEAR' || screen.point.role !== 'answer') {
+        return state;
+      }
+      return progressFor(state, screen.point.pairId) === undefined
+        ? state
+        : showing(state, { kind: 'ANSWER', pairId: screen.point.pairId, input: '' });
+    }
+
+    case 'DIGIT_PRESSED': {
+      const { screen } = state;
+      if (screen.kind !== 'ANSWER') {
+        return state;
+      }
+      return showing(state, { ...screen, input: appendDigit(screen.input, event.digit) });
+    }
+
+    case 'CLEAR': {
+      const { screen } = state;
+      if (screen.kind !== 'ANSWER' || screen.input === '') {
+        // An already empty input is returned as-is, so React sees no change.
+        return state;
+      }
+      return showing(state, { ...screen, input: '' });
+    }
+
+    case 'SUBMIT': {
+      const { screen } = state;
+      if (screen.kind !== 'ANSWER' || screen.input === '') {
+        return state;
+      }
+      const progress = progressFor(state, screen.pairId);
+      if (progress === undefined) {
+        return state;
+      }
+      // checkAnswer is the only place an answer is decided.
+      if (!checkAnswer(progress.puzzle, screen.input)) {
+        return showing(state, { ...screen, input: '' });
+      }
+      return {
+        screen: { kind: 'SOLVED', pairId: screen.pairId },
+        pairs: withPair(state.pairs, screen.pairId, (pair) => ({ ...pair, solved: true })),
+      };
+    }
   }
 }

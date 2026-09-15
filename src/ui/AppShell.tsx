@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArScreen } from './ArScreen';
 import { MapScreen } from './MapScreen';
+import { PuzzleScreen } from './PuzzleScreen';
 import { transition } from '../domain/gameState';
-import { mergePoints } from '../domain/points';
+import { progressFor } from '../domain/pairs';
+import { mergePoints, withCompletePairs } from '../domain/points';
 import type { LocationSource } from '../adapters/location';
 import type { AudioPlayer } from '../adapters/audio';
 import type { CameraAdapter } from '../adapters/camera';
 import type { PointStore } from '../adapters/pointStore';
+import type { PuzzleSource } from '../adapters/puzzleSource';
 import type { EscapePoint, GameEvent, GameState } from '../domain/types';
 
 export interface AppShellProps {
@@ -15,16 +18,29 @@ export interface AppShellProps {
   location: LocationSource;
   audio: AudioPlayer;
   camera: CameraAdapter;
-  rng: () => number;
+  puzzleSource: PuzzleSource;
 }
+
+const INITIAL: GameState = { screen: { kind: 'MAP' }, pairs: [] };
 
 /**
  * The composition. Holds one GameState, changes it only through `transition`,
  * and picks the screen the state implies. Every source is injected, so this
- * renders in a test with no device. See specs/features/app-shell.md.
+ * renders in a test with no device.
+ *
+ * Drawing a puzzle happens here rather than in `transition`: the source is
+ * asynchronous, a pure function cannot await, and the result arrives back as
+ * an event. See specs/features/pair-flow.md.
  */
-export function AppShell({ seed, pointStore, location, audio, camera, rng }: AppShellProps) {
-  const [state, setState] = useState<GameState>({ kind: 'MAP' });
+export function AppShell({
+  seed,
+  pointStore,
+  location,
+  audio,
+  camera,
+  puzzleSource,
+}: AppShellProps) {
+  const [state, setState] = useState<GameState>(INITIAL);
   const [points, setPoints] = useState<EscapePoint[]>(seed);
 
   // The point list arrives asynchronously, so it is read through a ref rather
@@ -32,19 +48,41 @@ export function AppShell({ seed, pointStore, location, audio, camera, rng }: App
   // context as an argument and stays pure.
   const pointsRef = useRef(points);
   pointsRef.current = points;
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-  const dispatch = useCallback(
-    (event: GameEvent) => {
-      setState((previous) => transition(previous, event, { points: pointsRef.current, rng }));
+  const dispatch = useCallback((event: GameEvent) => {
+    setState((previous) => transition(previous, event, { points: pointsRef.current }));
+  }, []);
+
+  const collect = useCallback(
+    (pairId: string) => {
+      // A pair already collected is shown, never drawn again — the same rule
+      // `transition` enforces, applied here so the source is not asked at all.
+      const known = progressFor(stateRef.current, pairId);
+      if (known !== undefined) {
+        dispatch({ kind: 'SHOW_PUZZLE', pairId });
+        return;
+      }
+      void puzzleSource
+        .draw(pairId)
+        .then((result) => {
+          dispatch(
+            result.ok
+              ? { kind: 'PUZZLE_DRAWN', pairId, puzzle: result.puzzle }
+              : { kind: 'PUZZLE_FAILED' },
+          );
+        })
+        .catch(() => dispatch({ kind: 'PUZZLE_FAILED' }));
     },
-    [rng],
+    [puzzleSource, dispatch],
   );
 
   useEffect(() => {
     let cancelled = false;
     void pointStore.loadStoredPoints().then((stored) => {
       if (!cancelled) {
-        setPoints(mergePoints(seed, stored));
+        setPoints(withCompletePairs(mergePoints(seed, stored)));
       }
     });
     return () => {
@@ -57,9 +95,32 @@ export function AppShell({ seed, pointStore, location, audio, camera, rng }: App
     [location, dispatch],
   );
 
-  if (state.kind === 'PUZZLE' || state.kind === 'SOLVED') {
-    return <ArScreen state={state} onEvent={dispatch} audio={audio} camera={camera} />;
+  const { screen } = state;
+
+  if (screen.kind === 'PUZZLE') {
+    const progress = progressFor(state, screen.pairId);
+    const source = points.find((p) => p.pairId === screen.pairId && p.role === 'puzzle');
+    return progress === undefined ? null : (
+      <PuzzleScreen
+        puzzle={progress.puzzle}
+        pointName={source?.name ?? ''}
+        onEvent={dispatch}
+      />
+    );
   }
 
-  return <MapScreen state={state} points={points} onEvent={dispatch} />;
+  if (screen.kind === 'ANSWER' || screen.kind === 'SOLVED') {
+    const progress = progressFor(state, screen.pairId);
+    return progress === undefined ? null : (
+      <ArScreen
+        screen={screen}
+        puzzle={progress.puzzle}
+        onEvent={dispatch}
+        audio={audio}
+        camera={camera}
+      />
+    );
+  }
+
+  return <MapScreen state={state} points={points} onEvent={dispatch} onCollect={collect} />;
 }

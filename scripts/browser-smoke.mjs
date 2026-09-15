@@ -31,14 +31,24 @@ const byId = new Map();
 for (const p of [...readPoints('src/data/points.json'), ...readPoints('src/data/points.local.json')]) {
   byId.set(p.id, p);
 }
-const POINT = [...byId.values()][0]?.coordinates;
-if (!POINT) {
-  throw new Error('no points to walk to');
+const all = [...byId.values()];
+const PUZZLE_POINT = all.find((p) => p.role === 'puzzle');
+const ANSWER_POINT = all.find((p) => p.role === 'answer' && p.pairId === PUZZLE_POINT?.pairId);
+if (!PUZZLE_POINT || !ANSWER_POINT) {
+  throw new Error('no whole pair to walk: need a puzzle point and its answer point');
 }
 /** Metres to degrees of latitude, so the offsets below are exact. */
 const DEG = 1 / 111_194.93;
-const INSIDE = { latitude: POINT.latitude + 19 * DEG, longitude: POINT.longitude };
-const FAR = { latitude: POINT.latitude + 100 * DEG, longitude: POINT.longitude };
+const near = (point) => ({
+  latitude: point.coordinates.latitude + 19 * DEG,
+  longitude: point.coordinates.longitude,
+});
+const INSIDE = near(PUZZLE_POINT);
+const AT_ANSWER = near(ANSWER_POINT);
+const FAR = {
+  latitude: PUZZLE_POINT.coordinates.latitude - 500 * DEG,
+  longitude: PUZZLE_POINT.coordinates.longitude,
+};
 
 /**
  * Refuse to measure a different application.
@@ -134,6 +144,12 @@ record(
 );
 record('app-shell AC1 no offer while far', 0, await page.getByText('Avaa tehtävä').count());
 
+record(
+  'pair-flow only the puzzle point is on the map before collecting',
+  1,
+  await page.locator('.maplibregl-marker').count(),
+);
+
 // AC2 — walking into range offers the puzzle.
 console.log('→ moving to 19 m from the point');
 await context.setGeolocation(INSIDE);
@@ -169,15 +185,39 @@ record('map-view every tile request succeeds', true, tileRequests.every((s) => s
 // The whole puzzle, played on web. No camera and no anchoring here — both are
 // native-only by the PRD, and the puzzle is neither.
 if (offers > 0) {
-  console.log('→ clicking "Avaa tehtävä"');
+  console.log('→ collecting the puzzle at the puzzle point');
   await page.getByText('Avaa tehtävä').first().click();
   await page.waitForTimeout(3_000);
   await page.screenshot({ path: `${OUT}/03-puzzle.png`, fullPage: true });
 
+  // pair-flow: the puzzle is plain text on every platform, and the keypad is
+  // somewhere else entirely — at the answer point.
+  const sum = await page.getByTestId('puzzle-text').textContent().catch(() => null);
+  console.log(`  the puzzle reads: ${JSON.stringify(sum)}`);
+  record('pair-flow the puzzle point hands out a puzzle', true, /^\d \+ \d = \?$/.test(sum ?? ''));
+  record('pair-flow no keypad at the puzzle point', 0, await page.getByTestId(/^key-(?!row-)/).count());
   record('ar-panel AC20 no camera on web', 0, await page.locator('video').count());
-  const sum = await page.locator('text=/^\\d \\+ \\d = \\?$/').first().textContent();
-  console.log(`  panel reads: ${JSON.stringify(sum)}`);
-  record('ar-panel AC20 panel states a sum', true, /^\d \+ \d = \?$/.test(sum ?? ''));
+
+  console.log('→ back to the map, which now shows the answer point');
+  await page.getByText('Takaisin kartalle').click();
+  await page.waitForTimeout(1_000);
+  // MapLibre draws its own marker elements on web; `marker` is the native
+  // map's testID and does not exist here.
+  record(
+    'pair-flow the answer point appears once earned',
+    2,
+    await page.locator('.maplibregl-marker').count(),
+  );
+  record('pair-flow the puzzle can be re-read from the map', 1, await page.getByText('Näytä pulma').count());
+
+  console.log('→ walking to the answer point');
+  await context.setGeolocation(AT_ANSWER);
+  await page.waitForTimeout(4_000);
+  await page.screenshot({ path: `${OUT}/04-at-answer.png`, fullPage: true });
+  record('pair-flow the answer point offers the keypad', 1, await page.getByText('Syötä koodi').count());
+
+  await page.getByText('Syötä koodi').click();
+  await page.waitForTimeout(2_000);
   // Keys only: `key-row-0` and friends share the prefix.
   record('ar-panel AC3 twelve keys', 12, await page.getByTestId(/^key-(?!row-)/).count());
 
@@ -192,7 +232,7 @@ if (offers > 0) {
 
   await page.getByTestId('key-OK').click();
   await page.waitForTimeout(1_500);
-  await page.screenshot({ path: `${OUT}/04-solved.png`, fullPage: true });
+  await page.screenshot({ path: `${OUT}/05-solved.png`, fullPage: true });
   record('ar-panel AC7 congratulation appears', 1, await page.getByText('Oikein! Laatikko aukesi.').count());
   record('ar-panel AC12 reset control appears', 1, await page.getByText('Aloita alusta').count());
 } else {

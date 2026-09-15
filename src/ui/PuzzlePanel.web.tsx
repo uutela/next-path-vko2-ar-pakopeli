@@ -33,17 +33,18 @@ function eventForKey(label: string): GameEvent {
   return { kind: 'DIGIT_PRESSED', digit: label };
 }
 
-export function PuzzlePanel({ state, onEvent, audio }: PuzzlePanelProps) {
+export function PuzzlePanel({ screen, puzzle, onEvent, audio }: PuzzlePanelProps) {
+  const input = screen.kind === 'ANSWER' ? screen.input : '';
   const fanfarePlayed = useRef(false);
 
   useEffect(() => {
-    if (state.kind === 'SOLVED' && !fanfarePlayed.current) {
+    if (screen.kind === 'SOLVED' && !fanfarePlayed.current) {
       fanfarePlayed.current = true;
       audio.play(FANFARE);
     }
-  }, [state.kind, audio]);
+  }, [screen.kind, audio]);
 
-  if (state.kind === 'SOLVED') {
+  if (screen.kind === 'SOLVED') {
     return (
       <View style={styles.panel} testID="panel">
         <Text style={styles.title}>Oikein! Laatikko aukesi.</Text>
@@ -56,9 +57,9 @@ export function PuzzlePanel({ state, onEvent, audio }: PuzzlePanelProps) {
 
   return (
     <View style={styles.panel} testID="panel">
-      <Text style={styles.title}>{state.puzzle.text}</Text>
+      <Text style={styles.title}>{puzzle.text}</Text>
       <View style={styles.display} testID="input-display">
-        <Text style={styles.title}>{state.input}</Text>
+        <Text style={styles.title}>{input}</Text>
       </View>
       <View style={styles.keypad}>
         {KEY_ROWS.map((row, index) => (

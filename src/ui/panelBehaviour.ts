@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { FANFARE } from '../adapters/audio';
 import type { AudioPlayer } from '../adapters/audio';
 import type { PuzzlePanelProps } from './PuzzlePanel';
-import type { EscapePoint, GameEvent, GameState } from '../domain/types';
+import type { GameEvent, Puzzle, Screen } from '../domain/types';
 
 /**
  * AC2 to AC14 of specs/features/ar-panel.md, written once and run against
@@ -13,34 +13,31 @@ import type { EscapePoint, GameEvent, GameState } from '../domain/types';
  * drawing primitive, never a rule. See AC18.
  */
 
-const POINT: EscapePoint = {
-  id: 'p1',
-  name: 'Puisto',
-  coordinates: { latitude: 60.1699, longitude: 24.9384 },
-  radiusMeters: 20,
-  role: 'puzzle',
+export const DRAWN: Puzzle = { text: '5 + 2 = ?', answer: 7 };
+
+export const ANSWER_SCREEN = {
+  kind: 'ANSWER',
   pairId: 'a',
-};
-
-export const PUZZLE_STATE = {
-  kind: 'PUZZLE',
-  point: POINT,
-  puzzle: { text: '5 + 2 = ?', answer: 7 },
   input: '',
-} satisfies Extract<GameState, { kind: 'PUZZLE' }>;
+} satisfies Extract<Screen, { kind: 'ANSWER' }>;
 
-export const SOLVED_STATE = { kind: 'SOLVED', point: POINT } satisfies Extract<
-  GameState,
+export const SOLVED_SCREEN = { kind: 'SOLVED', pairId: 'a' } satisfies Extract<
+  Screen,
   { kind: 'SOLVED' }
 >;
 
 export function describePanelBehaviour(name: string, Panel: ComponentType<PuzzlePanelProps>) {
-  const mount = (state: PuzzlePanelProps['state'] = PUZZLE_STATE) => {
+  const mount = (screenProp: PuzzlePanelProps['screen'] = ANSWER_SCREEN) => {
     const events: GameEvent[] = [];
     const played: string[] = [];
     const audio: AudioPlayer = { play: (asset) => played.push(asset) };
     const view = render(
-      createElement(Panel, { state, onEvent: (e: GameEvent) => events.push(e), audio }),
+      createElement(Panel, {
+        screen: screenProp,
+        puzzle: DRAWN,
+        onEvent: (e: GameEvent) => events.push(e),
+        audio,
+      }),
     );
     return { events, played, view };
   };
@@ -75,7 +72,7 @@ export function describePanelBehaviour(name: string, Panel: ComponentType<Puzzle
     });
 
     it('AC4: the input display shows the current input', () => {
-      mount({ ...PUZZLE_STATE, input: '12' });
+      mount({ ...ANSWER_SCREEN, input: '12' });
       expect(screen.getByTestId('input-display').textContent).toBe('12');
     });
 
@@ -85,13 +82,13 @@ export function describePanelBehaviour(name: string, Panel: ComponentType<Puzzle
     });
 
     it('AC6: pressing OK submits', () => {
-      const { events } = mount({ ...PUZZLE_STATE, input: '7' });
+      const { events } = mount({ ...ANSWER_SCREEN, input: '7' });
       pressKey('OK');
       expect(events).toEqual([{ kind: 'SUBMIT' }]);
     });
 
     it('AC7: solving replaces the panel text with the congratulation', () => {
-      mount(SOLVED_STATE);
+      mount(SOLVED_SCREEN);
       expect(screen.getByText('Oikein! Laatikko aukesi.')).toBeTruthy();
       expect(screen.queryByText('5 + 2 = ?')).toBeNull();
     });
@@ -100,12 +97,12 @@ export function describePanelBehaviour(name: string, Panel: ComponentType<Puzzle
       const played: string[] = [];
       const audio: AudioPlayer = { play: (asset) => played.push(asset) };
       const view = render(
-        createElement(Panel, { state: PUZZLE_STATE, onEvent: () => undefined, audio }),
+        createElement(Panel, { screen: ANSWER_SCREEN, puzzle: DRAWN, onEvent: () => undefined, audio }),
       );
       expect(played).toEqual([]);
 
       view.rerender(
-        createElement(Panel, { state: SOLVED_STATE, onEvent: () => undefined, audio }),
+        createElement(Panel, { screen: SOLVED_SCREEN, puzzle: DRAWN, onEvent: () => undefined, audio }),
       );
 
       expect(played).toEqual([FANFARE]);
@@ -118,7 +115,8 @@ export function describePanelBehaviour(name: string, Panel: ComponentType<Puzzle
       // skips an effect whose dependencies have not changed.
       const panel = () =>
         createElement(Panel, {
-          state: SOLVED_STATE,
+          screen: SOLVED_SCREEN,
+          puzzle: DRAWN,
           onEvent: () => undefined,
           audio: { play: (asset: string) => played.push(asset) } satisfies AudioPlayer,
         });
@@ -131,20 +129,20 @@ export function describePanelBehaviour(name: string, Panel: ComponentType<Puzzle
     });
 
     it('AC10: a wrong answer keeps the puzzle on screen', () => {
-      mount({ ...PUZZLE_STATE, input: '' });
+      mount({ ...ANSWER_SCREEN, input: '' });
       expect(screen.getByText('5 + 2 = ?')).toBeTruthy();
       expect(screen.getByTestId('input-display').textContent).toBe('');
       expect(screen.queryByText('Oikein! Laatikko aukesi.')).toBeNull();
     });
 
     it('AC12: the reset control returns to the map', () => {
-      const { events } = mount(SOLVED_STATE);
+      const { events } = mount(SOLVED_SCREEN);
       screen.getByText('Aloita alusta').click();
       expect(events).toEqual([{ kind: 'RESET' }]);
     });
 
     it('AC13: the clear key empties a mistyped input', () => {
-      const { events } = mount({ ...PUZZLE_STATE, input: '12' });
+      const { events } = mount({ ...ANSWER_SCREEN, input: '12' });
       pressKey('C');
       expect(events).toEqual([{ kind: 'CLEAR' }]);
     });

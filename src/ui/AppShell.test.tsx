@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { AppShell } from './AppShell';
 import type { AppShellProps } from './AppShell';
 import { createMockLocationSource } from '../adapters/location';
+import { createLocalPuzzleSource } from '../adapters/puzzleSource';
 import type { AudioPlayer } from '../adapters/audio';
 import type { CameraAdapter } from '../adapters/camera';
 import type { PointStore } from '../adapters/pointStore';
@@ -63,7 +64,18 @@ const POINT: EscapePoint = {
   role: 'puzzle',
   pairId: 'a',
 };
+/** POINT's partner: the answer point of pair "a". */
+const ANSWER_POINT: EscapePoint = {
+  ...POINT,
+  id: 'p2',
+  name: 'Vastaus',
+  coordinates: { latitude: 60.171, longitude: 24.9384 },
+  role: 'answer',
+};
+/** 19 m from POINT. */
 const INSIDE: Coordinates = { latitude: 60.1700708711, longitude: 24.9384 };
+/** 19 m from ANSWER_POINT. */
+const AT_ANSWER: Coordinates = { latitude: 60.1708291289, longitude: 24.9384 };
 
 function fakePointStore(stored: EscapePoint[] = []) {
   let loads = 0;
@@ -83,17 +95,17 @@ function scriptedRng(...values: number[]): () => number {
 }
 
 function setup(overrides: Partial<AppShellProps> = {}) {
-  const location = createMockLocationSource([INSIDE]);
+  const location = createMockLocationSource([INSIDE, AT_ANSWER]);
   const { store, loads } = fakePointStore();
   const camera: CameraAdapter = { permission: 'granted', request: () => undefined };
   const audio: AudioPlayer = { play: () => undefined };
   const props: AppShellProps = {
-    seed: [POINT],
+    seed: [POINT, ANSWER_POINT],
     pointStore: store,
     location,
     audio,
     camera,
-    rng: scriptedRng(0.5, 0.2),
+    puzzleSource: createLocalPuzzleSource(scriptedRng(0.5, 0.2)),
     ...overrides,
   };
   const view = render(createElement(AppShell, props));
@@ -121,22 +133,31 @@ describe('AppShell', () => {
     await waitFor(() => expect(screen.getAllByText('Avaa tehtävä')).toHaveLength(1));
   });
 
-  it('AC3: opening the puzzle shows the AR screen', async () => {
+  it('AC3: collecting at the puzzle point shows the puzzle as plain text', async () => {
     const { location } = setup();
     act(() => location.advance());
     await waitFor(() => screen.getByText('Avaa tehtävä'));
 
     act(() => screen.getByText('Avaa tehtävä').click());
 
-    expect(screen.getAllByText('5 + 2 = ?')).toHaveLength(1);
+    // The source is asynchronous, so the puzzle arrives after the press.
+    await waitFor(() => expect(screen.getAllByText('5 + 2 = ?')).toHaveLength(1));
     expect(screen.queryByText('Avaa tehtävä')).toBeNull();
+    // No camera and no anchored panel: this screen is ordinary text.
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
   });
 
-  it('AC4: solving the puzzle reaches the congratulation', async () => {
+  it('AC4: walking to the answer point and typing the code reaches the congratulation', async () => {
     const { location } = setup();
     act(() => location.advance());
     await waitFor(() => screen.getByText('Avaa tehtävä'));
     act(() => screen.getByText('Avaa tehtävä').click());
+    await waitFor(() => screen.getByText('5 + 2 = ?'));
+
+    act(() => screen.getByText('Takaisin kartalle').click());
+    act(() => location.advance());
+    await waitFor(() => screen.getByText('Syötä koodi'));
+    act(() => screen.getByText('Syötä koodi').click());
 
     pressKey('7');
     pressKey('OK');
@@ -145,10 +166,13 @@ describe('AppShell', () => {
   });
 
   it('AC5: stored points are merged with the seed, and loaded once', async () => {
-    const stored: EscapePoint = { ...POINT, id: 'p2', name: 'Kentta' };
-    const { store, loads } = fakePointStore([stored]);
+    // A whole second pair, since a half pair never reaches the map.
+    const storedPuzzle: EscapePoint = { ...POINT, id: 'p3', name: 'Kentta', pairId: 'b' };
+    const storedAnswer: EscapePoint = { ...ANSWER_POINT, id: 'p4', pairId: 'b' };
+    const { store, loads } = fakePointStore([storedPuzzle, storedAnswer]);
     setup({ pointStore: store });
 
+    // Puzzle points only until their puzzles are collected: two of them now.
     await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(2));
     expect(loads()).toBe(1);
   });
@@ -156,6 +180,7 @@ describe('AppShell', () => {
   it('AC5: an empty store leaves the seed alone', async () => {
     setup();
 
+    // One marker, not two: the answer point is not on the map until earned.
     await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1));
   });
 
@@ -180,6 +205,11 @@ describe('AppShell', () => {
     act(() => first.location.advance());
     await waitFor(() => screen.getByText('Avaa tehtävä'));
     act(() => screen.getByText('Avaa tehtävä').click());
+    await waitFor(() => screen.getByText('5 + 2 = ?'));
+    act(() => screen.getByText('Takaisin kartalle').click());
+    act(() => first.location.advance());
+    await waitFor(() => screen.getByText('Syötä koodi'));
+    act(() => screen.getByText('Syötä koodi').click());
     pressKey('7');
     pressKey('OK');
     expect(screen.getAllByText('Oikein! Laatikko aukesi.')).toHaveLength(1);

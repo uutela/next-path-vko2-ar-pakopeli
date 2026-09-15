@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { createElement } from 'react';
 import { ArScreen } from './ArScreen.web';
-import { PUZZLE_STATE } from './panelBehaviour';
+import { ANSWER_SCREEN } from './panelBehaviour';
 import type { CameraAdapter, CameraPermission } from '../adapters/camera';
 
 /**
@@ -33,7 +33,8 @@ function cameraAdapter(permission: CameraPermission) {
 }
 
 const props = (permission: CameraPermission) => ({
-  state: PUZZLE_STATE,
+  screen: ANSWER_SCREEN,
+  puzzle: { text: '5 + 2 = ?', answer: 7 },
   onEvent: () => undefined,
   audio: { play: () => undefined },
   camera: cameraAdapter(permission).camera,
