@@ -305,3 +305,19 @@ Prio 4 adds the answer point and wires it, and the row now says so.
 
 141 tests, `npx tsc --noEmit` exit 0, and the browser 14 PASS / 0 FAIL with 0
 console and 0 page errors — on port 8082, against this repository.
+
+### Round 4 — Prio 4, one pair in the seed
+
+Two criteria first (AC21, AC22): whole pairs only, judged *after* merging, so a
+public repo seed can hold the puzzle point and the uncommitted local file the
+answer point. Then `composeSeed` was wired to `withCompletePairs`, and the seed
+gained its second point.
+
+Two things corrected rather than worked around. The row's own done-when used
+`JSON.stringify(p).includes('answer')` to prove no answer is stored — written
+before roles had names, and unable to tell the role value `"answer"` from an
+answer field. And three AC14 criteria began failing because their fixture was a
+single point, which is now a half pair: the spec's fixture became a pair, since
+a criterion that fails for a reason it does not name proves nothing.
+
+143 tests, tsc exit 0, browser 14 PASS with 0 console and 0 page errors.
