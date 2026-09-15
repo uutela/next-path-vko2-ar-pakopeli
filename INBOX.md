@@ -103,10 +103,11 @@ One line per thing noticed while working. Not implemented, not detoured into.
   every check ran against a different application. Repeating a wrong
   measurement is what made it look inherited — the stashed-clean control run
   hit the same foreign server. Started on port 8082 instead, this repo passes
-  all fourteen checks with 0 console errors and 0 page errors. **Run the smoke
-  as `node scripts/browser-smoke.mjs http://localhost:8082 .smoke` after
-  starting the server on that port, or check what is answering before believing
-  a result.**
+  all fourteen checks with 0 console errors and 0 page errors. **No longer a matter of
+  remembering:** `scripts/browser-smoke.mjs` now asks the dev server for its
+  own project root before running a single check, and exits 1 if it is not this
+  repository — proven against both servers. A forgotten port fails loudly
+  instead of reporting someone else's app.
 - An `expo-location` web defect was diagnosed in detail — instrumented
   `navigator.geolocation`, library source read, a replacement adapter written
   and tested — and none of it was real: it was the week 1 app being measured.

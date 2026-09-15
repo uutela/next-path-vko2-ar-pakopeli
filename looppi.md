@@ -29,10 +29,22 @@ round finishes one.
    what changed that no AC asked for, which tests prove what. End with
    `APPROVED` or `CHANGES_REQUIRED` — a verdict, not prose. `CHANGES_REQUIRED`
    keeps the task `TODO` and the round continues into a fix or stops on a cap.
-6. **Browser test — web UI only.** Start the web build (`npm run web`) and run
-   `node scripts/browser-smoke.mjs`, which walks the map half against
-   `http://localhost:8081` and reports every check plus console and page
-   errors. Required only for tasks that change something a browser can see.
+6. **Browser test — web UI only.** Two commands, in this order:
+
+   ```
+   npx expo start --web --port 8082
+   node scripts/browser-smoke.mjs http://localhost:8082 .smoke
+   ```
+
+   **Not the default port.** Expo's default is 8081, and another checkout of
+   this project — the week 1 fork — answers on it just as readily. A whole
+   session's checks once ran against that one while this project's server had
+   printed "Port 8081 is running ar-pakopeli in another window" and skipped
+   starting. The smoke script now asks the server for its project root and
+   exits 1 rather than measure a stranger, so a forgotten port fails loudly
+   instead of lying; the explicit port keeps it from happening at all.
+
+   Required only for tasks that change something a browser can see.
 7. **Mark done.** Status `TODO` → `DONE` in this file, spec Status `Draft` →
    `In Progress` → `Done`, and commit.
 
