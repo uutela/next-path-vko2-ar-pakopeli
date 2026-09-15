@@ -32,7 +32,7 @@ const ctx = (): TransitionContext => ({ points: [POINT], rng: scriptedRng(0.5, 0
 const PUZZLE_STATE: GameState = {
   kind: 'PUZZLE',
   point: POINT,
-  puzzle: { left: 5, right: 2, answer: 7 },
+  puzzle: { text: '5 + 2 = ?', answer: 7 },
   input: '',
 };
 
@@ -61,7 +61,7 @@ describe('transition', () => {
     expect(next).toEqual({
       kind: 'PUZZLE',
       point: POINT,
-      puzzle: { left: 5, right: 2, answer: 7 },
+      puzzle: { text: '5 + 2 = ?', answer: 7 },
       input: '',
     });
   });
@@ -96,7 +96,7 @@ describe('transition', () => {
     expect(next).toEqual({
       kind: 'PUZZLE',
       point: POINT,
-      puzzle: { left: 5, right: 2, answer: 7 },
+      puzzle: { text: '5 + 2 = ?', answer: 7 },
       input: '',
     });
   });
@@ -182,7 +182,7 @@ describe('transition', () => {
     expect(next).toEqual({
       kind: 'PUZZLE',
       point: POINT,
-      puzzle: { left: 5, right: 2, answer: 7 },
+      puzzle: { text: '5 + 2 = ?', answer: 7 },
       input: '',
     });
   });

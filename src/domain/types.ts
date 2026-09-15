@@ -21,10 +21,16 @@ export interface EscapePoint {
   pairId: string;
 }
 
-/** One arithmetic task: two operands and the sum they add up to. */
+/**
+ * One task: what the player reads, and the code that answers it.
+ *
+ * No operands. An agent's puzzle has a question and a code, not a sum, and
+ * the agent is a later implementation of the same source — a record only the
+ * local generator could fill would be the wrong record.
+ * See specs/features/puzzle.md and specs/features/pair-flow.md.
+ */
 export interface Puzzle {
-  left: number;
-  right: number;
+  text: string;
   answer: number;
 }
 

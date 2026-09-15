@@ -19,13 +19,16 @@ function drawOperand(rng: () => number): number {
 /**
  * Draws one addition task. Randomness is injected so the function stays pure
  * and every criterion can state an exact expected value.
+ *
+ * The result is a question and a code, not a sum: an agent supplies the same
+ * record later and has no operands to put in it.
  * See specs/features/puzzle.md.
  */
 export function generatePuzzle(rng: () => number): Puzzle {
   const left = drawOperand(rng);
   const right = drawOperand(rng);
 
-  return { left, right, answer: left + right };
+  return { text: `${left} + ${right} = ?`, answer: left + right };
 }
 
 /**
