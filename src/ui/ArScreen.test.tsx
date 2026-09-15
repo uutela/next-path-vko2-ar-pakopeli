@@ -50,6 +50,8 @@ const POINT: EscapePoint = {
   name: 'Puisto',
   coordinates: { latitude: 60.1699, longitude: 24.9384 },
   radiusMeters: 20,
+  role: 'puzzle',
+  pairId: 'a',
 };
 
 const PUZZLE_STATE = {

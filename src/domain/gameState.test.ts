@@ -13,6 +13,8 @@ const POINT: EscapePoint = {
   name: 'Testipiste',
   coordinates: REFERENCE,
   radiusMeters: 20,
+  role: 'puzzle',
+  pairId: 'a',
 };
 
 const POINT_B: EscapePoint = {
@@ -20,6 +22,8 @@ const POINT_B: EscapePoint = {
   name: 'Lahempi',
   coordinates: { latitude: 60.1700888575, longitude: 24.9384 },
   radiusMeters: 20,
+  role: 'puzzle',
+  pairId: 'a',
 };
 
 /** Draws 5 + 2 = 7, matching the puzzle used throughout these criteria. */

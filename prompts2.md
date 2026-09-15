@@ -283,3 +283,25 @@ fourteen checks with 0 console errors and 0 page errors — with the original
 `expo-location` path, unchanged.
 
 Prio 2 therefore has its browser evidence after all: 14 PASS, 0 FAIL.
+
+### Round 3 — Prio 3, a point knows its role and its pair
+
+`points-store.md` gained AC15 to AC20 first. Then RED against a stub: five
+behavioural failures, and AC17 passing already because `isEscapePoint` ignored
+fields it did not know about — worth saying rather than counting as a win.
+
+Making `role` and `pairId` required turned the compiler into the task list:
+eleven fixtures across nine files, each named by `tsc`, none found by reading.
+
+It also found a real defect. `saveStoredPoints` wrote "exactly the four fields
+of an EscapePoint and nothing else" — an explicit list, so the two new fields
+were saved as nothing and the point failed validation on the next load. In the
+field that is a point an admin marked and then watched disappear. The code was
+corrected, not the test.
+
+`withCompletePairs` is implemented and tested but deliberately not wired into
+`composeSeed`: with only a puzzle point in the seed it would empty the map.
+Prio 4 adds the answer point and wires it, and the row now says so.
+
+141 tests, `npx tsc --noEmit` exit 0, and the browser 14 PASS / 0 FAIL with 0
+console and 0 page errors — on port 8082, against this repository.

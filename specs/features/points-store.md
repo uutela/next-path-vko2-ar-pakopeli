@@ -49,7 +49,11 @@ either function: it lives only in `GameState`, in memory.
 
 ## Acceptance Criteria
 
-Throughout, `SEED_A` is `{ id: "p1", name: "Puisto", coordinates: { latitude: 60.1699, longitude: 24.9384 }, radiusMeters: 20 }`.
+Throughout, `SEED_A` is `{ id: "p1", name: "Puisto", coordinates: { latitude: 60.1699, longitude: 24.9384 }, radiusMeters: 20, role: "puzzle", pairId: "a" }`.
+
+`PUZZLE_A`, `ANSWER_A`, `PUZZLE_B` and `ANSWER_B` are the pair fixtures of
+`pair-flow.md`, used unchanged here so one set of coordinates means the same
+thing in both specs.
 
 ### AC1: With nothing stored, the seed is the whole list
 **Given** `seed = [SEED_A]` and `stored = []`
@@ -57,12 +61,12 @@ Throughout, `SEED_A` is `{ id: "p1", name: "Puisto", coordinates: { latitude: 60
 **Then** it returns `[SEED_A]`
 
 ### AC2: A stored point with a new id is added
-**Given** `seed = [SEED_A]` and `stored = [{ id: "p2", name: "Kentta", coordinates: { latitude: 60.1710, longitude: 24.9400 }, radiusMeters: 20 }]`
+**Given** `seed = [SEED_A]` and `stored = [{ id: "p2", name: "Kentta", coordinates: { latitude: 60.1710, longitude: 24.9400 }, radiusMeters: 20, role: "answer", pairId: "a" }]`
 **When** `mergePoints(seed, stored)` is called
 **Then** it returns both points, ordered `["p1", "p2"]` by `id`
 
 ### AC3: A stored point overrides a seed point with the same id
-**Given** `seed = [SEED_A]` and `stored = [{ id: "p1", name: "Siirretty", coordinates: { latitude: 60.1800, longitude: 24.9384 }, radiusMeters: 30 }]`
+**Given** `seed = [SEED_A]` and `stored = [{ id: "p1", name: "Siirretty", coordinates: { latitude: 60.1800, longitude: 24.9384 }, radiusMeters: 30, role: "puzzle", pairId: "a" }]`
 **When** `mergePoints(seed, stored)` is called
 **Then** it returns exactly one point, with `name: "Siirretty"`, `radiusMeters: 30` and `latitude: 60.1800`
 
@@ -145,10 +149,51 @@ malformed point in the whole system, not the least.
 Composing the seed is therefore a function in the domain rather than two casts
 in the one file no criterion covers.
 
+### AC15: A point without a usable role is not a point
+**Given** `isEscapePoint(value)` for a well-formed point with `role: "bonus"`, one with `role` missing, and one with `role: 7`
+**When** it is called
+**Then** it returns `false` for every one
+
+`pair-flow.md` gives every point a job: `"puzzle"` hands out the task,
+`"answer"` takes the code. A point with neither belongs to no pair and can
+never be reached, so it is dropped where every other malformed point is
+dropped rather than reaching the map as a marker that does nothing.
+
+### AC16: A point without a pair id is not a point
+**Given** `isEscapePoint(value)` for a well-formed point with `pairId: ""`, one with `pairId` missing, and one with `pairId: null`
+**When** it is called
+**Then** it returns `false` for every one
+
+### AC17: A well-formed pair member is a point
+**Given** `isEscapePoint({ id: "a-puzzle", name: "Tehtävä", coordinates: { latitude: 60.1699, longitude: 24.9384 }, radiusMeters: 20, role: "puzzle", pairId: "a" })`
+**When** it is called
+**Then** it returns `true`
+
+### AC18: A half pair is dropped
+**Given** `withCompletePairs([PUZZLE_A, ANSWER_A, PUZZLE_B])`, where `PUZZLE_B` is the only point with `pairId: "b"`
+**When** it is called
+**Then** the returned ids are exactly `["a-answer", "a-puzzle"]`
+
+A puzzle point with no answer point hands out a code that can never be
+entered, and an answer point with no puzzle point can never be revealed.
+Either one is a data mistake in a hand-typed file, and the game cannot tell the
+player about it — so it is dropped before the map draws it, the way a malformed
+point already is.
+
+### AC19: Two points of the same role are not a pair
+**Given** `withCompletePairs([PUZZLE_A, { ...PUZZLE_A, id: "a-puzzle-2" }])` — both `role: "puzzle"`, both `pairId: "a"`
+**When** it is called
+**Then** it returns `[]`
+
+### AC20: Complete pairs survive untouched
+**Given** `withCompletePairs([PUZZLE_A, ANSWER_A, PUZZLE_B, ANSWER_B])`
+**When** it is called
+**Then** the returned ids are exactly `["a-answer", "a-puzzle", "b-answer", "b-puzzle"]`
+
 ## Files to Modify
 | File | Change |
 |---|---|
-| `src/domain/points.ts` | `mergePoints`, `isEscapePoint` and `composeSeed` |
+| `src/domain/points.ts` | `mergePoints`, `isEscapePoint`, `composeSeed` and `withCompletePairs` |
 | `src/domain/points.test.ts` | New. AC1–AC6 |
 | `src/adapters/pointStore.ts` | New. `KeyValueStore`, `createPointStore`, and the corrupt-data fallback |
 | `src/adapters/pointStore.test.ts` | New. AC7–AC10 against an in-memory fake of the storage API |
@@ -182,6 +227,12 @@ in the one file no criterion covers.
 | `loadStoredPoints` | error case | store holds one point and one non-point | called | only the point (AC13) |
 | `composeSeed` | error case | local file with a malformed entry | called | only the committed seed (AC14) |
 | `composeSeed` | happy path | local point overriding a seed id | called | the local point wins |
+| `isEscapePoint` | error case | role `"bonus"`, role missing, role `7` | called | `false` for each (AC15) |
+| `isEscapePoint` | error case | `pairId` `""`, missing, `null` | called | `false` for each (AC16) |
+| `isEscapePoint` | happy path | a well-formed pair member | called | `true` (AC17) |
+| `withCompletePairs` | error case | a puzzle point whose pair has no answer point | called | that point dropped (AC18) |
+| `withCompletePairs` | error case | two puzzle points sharing one `pairId` | called | `[]` (AC19) |
+| `withCompletePairs` | happy path | two complete pairs | called | all four, sorted by id (AC20) |
 | `saveStoredPoints` | happy path | two points | called | the store holds both, ids preserved |
 | `saveStoredPoints` | error case | a solved point in memory | called | payload contains no `solved` key (AC10) |
 
