@@ -165,11 +165,18 @@ One line per thing noticed while working. Not implemented, not detoured into.
   reads it, and a separate test refuses socket connections for the whole
   offline path. Anything in this kit that deletes env vars to simulate "no key"
   has the same hole.
-- **`gemini-2.5-flash` answers `404 NOT_FOUND` for the key on this machine**,
-  with a message recommending the Interactions API. Seen once, by accident, in
-  the run above. The model is configurable through `GEMINI_MODEL` and the
-  default is unchanged, because choosing a model for someone else's account
-  from one error is guesswork. The agent has not been run against a live model.
+- ~~RESOLVED~~ **`gemini-2.5-flash` answers `404 NOT_FOUND`, and the key is
+  not the reason.** The first note here said only "404 for the key on this
+  machine", which is true and points the next reader at the wrong thing.
+  `client.models.list()` succeeds with that key and does not return
+  `gemini-2.5-flash` at all: the 2.5 line survives only as native-audio
+  variants, and the text models are the 3.x generation. A bad or truncated key
+  answers 401 or 403, never 404 on a model name — that difference is the whole
+  diagnosis. The agent's default is now `gemini-3.5-flash`, the most stable
+  non-preview flash the key lists, still overridable with `GEMINI_MODEL`.
+  **The kit itself still defaults to `gemini-2.5-flash`** in
+  `agents/gemini_agent.py` and `agents/homework-coach-agent/subagents/coach_narrator.py`;
+  those are the upstream author's files and are left unmodified.
 - **The agent endpoint is `localhost` and a phone is not the development
   machine.** `src/config/agent.ts` points at `http://localhost:8002`, which is
   right for the web build and wrong on a device, where it is the phone itself.

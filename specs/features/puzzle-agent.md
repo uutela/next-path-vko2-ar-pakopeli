@@ -145,10 +145,18 @@ talking to — that is why it wraps this one too.
 | `scripts/browser-smoke.mjs` | Checks that an absent agent still produces a puzzle |
 
 ## Risk
-- **The agent has not been run against a live model.** Everything here is
-  proven against fakes. The one accidental live call returned `404 NOT_FOUND`
-  for `gemini-2.5-flash` on this machine's key — recorded in `INBOX.md`, model
-  left configurable, default unchanged rather than guessed at.
+- **The criteria are proven against fakes; the live model is proven three
+  times.** Every AC above runs offline. Beyond them, three puzzles were drawn
+  against `gemini-3.5-flash` and each passed schema, solve-back and duplicate
+  on the first attempt — a coin-splitting puzzle whose answer this reader
+  checked by hand, a legs-and-heads puzzle and a mixture puzzle. Three draws is
+  not a sample: nothing here says how often the model writes an unusable puzzle,
+  only that the path works and that a refusal is what the player would see if
+  it did not.
+- **The default model was `gemini-2.5-flash` and that model is gone.** The key
+  lists no such model — a fact worth separating from the key being wrong,
+  because a bad key answers 401 or 403 and this answered 404. The kit's own
+  files still default to it and are left unmodified; ours does not.
 - **A fallback can hide a broken agent.** Mitigated, not removed: every refusal
   is reported, and the smoke run checks the absent-agent path by name.
 - **`localhost` is the phone on a phone.** The agent will never be reached from
