@@ -114,3 +114,10 @@ One line per thing noticed while working. Not implemented, not detoured into.
   The adapter was removed rather than kept "in case". The lesson is cheaper
   than the four rounds it cost: confirm the process under test belongs to the
   repository under test, before instrumenting anything.
+- `scripts/ensure-local-points.mjs` printed a template that had stopped being
+  valid: no `role`, no `pairId`, and a single point where the game now needs a
+  whole pair. Anyone following it got a point dropped silently by
+  `isEscapePoint` or by `withCompletePairs`, with nothing on screen to say why.
+  Introduced in rounds 3 and 4, when the fields became required, and not
+  noticed until someone asked how the local file works. Corrected: the template
+  is a whole pair and names the three ways a point disappears without an error.
