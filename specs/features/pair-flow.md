@@ -324,6 +324,25 @@ memory and a reset is how it ends.
 **When** each of `SUBMIT`, `CLEAR`, `DIGIT_PRESSED`, `OPEN_ANSWER` and `CLOSE_PUZZLE` is sent
 **Then** each returns a state deep-equal to `EMPTY` and nothing is thrown
 
+### AC29: Returning to the map re-asks where the player is standing
+**Given** a pair whose two points are in the same place, a player standing there, and exactly one position delivered — the player does not move again
+**When** the puzzle is collected and `Takaisin kartalle` is pressed
+**Then** the offer `Syötä koodi` is present without any further position
+
+Proximity is only ever recomputed from a `LOCATION_CHANGED`, and a device on a
+desk sends no more of them: `watchPositionAsync` notifies after a metre of
+movement. So the screen returned to `MAP` and stayed there, with the player
+standing on an answer point that never offered anything. Found by someone
+testing without walking.
+
+The shell re-dispatches the last known position when an event returns the
+player to the map — `CLOSE_PUZZLE` and `RESET`. It is not `transition`'s job:
+the coordinates are deliberately not in `GameState`, because where the player
+is does not change what the game allows, only what proximity currently
+matches. `app-shell.md` AC10 fixed the same class of problem at start-up —
+"a device that never moves still gets a position" — and this is the same
+mistake one screen later.
+
 ## Files to Modify
 | File | Change |
 |---|---|
@@ -398,6 +417,7 @@ memory and a reset is how it ends.
 | `transition` | happy path | `SOLVED` with a solved pair and a notice | `RESET` | `MAP`, `pairs: []`, no notice (AC25) |
 | `transition` | property | any state and event | called | input object unmutated (AC26) |
 | `transition` | error case | `EMPTY` | each of five inapplicable events | unchanged, no throw (AC27) |
+| `AppShell` | edge case | one position, pair in one place | puzzle collected and closed | `Syötä koodi` present with no further position (AC29) |
 
 ## Spec Readiness checklist
 - [x] Every AC has a precise expected value — no "works correctly"
