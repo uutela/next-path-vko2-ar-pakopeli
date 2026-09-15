@@ -40,12 +40,22 @@ const POINT_A: EscapePoint = {
 const POINT_B: EscapePoint = { ...POINT_A, id: 'p2', coordinates: { latitude: 60.2, longitude: 25 } };
 
 describe('initialCentre', () => {
-  it('AC12: the centre is the first point', () => {
-    expect(initialCentre([POINT_A, POINT_B])).toEqual([24.9384, 60.1699]);
+  it('AC12: the centre is the player, when the player is known', () => {
+    expect(initialCentre([POINT_A, POINT_B], { latitude: 60.4, longitude: 25.1 })).toEqual([
+      25.1, 60.4,
+    ]);
   });
 
-  it('AC13: with no points the centre falls back to a named constant', () => {
-    expect(initialCentre([])).toEqual(MAP_FALLBACK_CENTRE);
+  it('AC17: without a position the centre is the first point', () => {
+    expect(initialCentre([POINT_A, POINT_B], undefined)).toEqual([24.9384, 60.1699]);
+  });
+
+  it('AC13: with no points and no position the centre falls back to a named constant', () => {
+    expect(initialCentre([], undefined)).toEqual(MAP_FALLBACK_CENTRE);
+  });
+
+  it('AC12: a known position wins even when there are no points', () => {
+    expect(initialCentre([], { latitude: 60.4, longitude: 25.1 })).toEqual([25.1, 60.4]);
   });
 });
 

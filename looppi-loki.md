@@ -26,8 +26,10 @@ Lue tämä, tai `git log --oneline` — yksi rivi per kierros.
 | 9 | 16 | Paneelin testit molempia toteutuksia vasten (31 testiä) | 160 | 0 | 19/19 | DONE — ankkurointia **ei todennettu** |
 | 10 | 17 | Speksit kiinni, `game-state.md` merkitty korvatuksi | **163** | 0 | 19/19 | DONE |
 | 11 | 18 | Kerätty pulmapiste lakkaa tarjoamasta — ei enää varjosta vastauspistettään | **166** | 0 | 19/19 | DONE |
+| 12 | – | Siemenpisteiden nimet vastaamaan sijaintia (nimet olivat väärien paikkojen) | 166 | 0 | 19/19 | DONE |
+| 13 | 19 | Kartta avautuu pelaajan sijaintiin, ei ensimmäiseen pisteeseen | **170** | 0 | 19/19 | DONE |
 
-**Kaikki 18 tehtävää valmiit.** 166 testiä, `npx tsc --noEmit` exit 0,
+**Kaikki 19 tehtävää valmiit.** 170 testiä, `npx tsc --noEmit` exit 0,
 19 selaintarkistusta, 0 konsoli- ja 0 sivuvirhettä — viimeinen ajo paikallisilla
 pisteillä, joiden pari on samassa paikassa. Se pari jumitti ennen kierrosta 11.
 
