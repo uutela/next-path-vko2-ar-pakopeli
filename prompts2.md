@@ -321,3 +321,21 @@ single point, which is now a half pair: the spec's fixture became a pair, since
 a criterion that fails for a reason it does not name proves nothing.
 
 143 tests, tsc exit 0, browser 14 PASS with 0 console and 0 page errors.
+
+### Rounds 5 and 6 — the puzzle leaves the domain and gains a contract
+
+Round 5 turned `Puzzle` into `{ text, answer }` and put it behind
+`src/adapters/puzzleSource.ts`. `puzzle.md` was corrected first, AC5 included:
+it asserted `answer === left + right` and now asserts that the text names two
+numbers and the answer is their sum. Both panels render `puzzle.text` rather
+than composing a sum from operands they should never have seen.
+
+Round 6 added `validating(source)`, the one place the one-to-six-digit rule
+lives. It wraps *any* source, including the local one that cannot break the
+contract, so nothing downstream has to know which source it is talking to —
+the later one is an agent that has never read the file. A failure the source
+reports is passed through unchanged rather than relabelled.
+
+149 tests, tsc exit 0, browser 14 PASS with 0 console and 0 page errors. The
+row's second half — a one-digit answer through to solved — is already covered
+by `game-state.md` AC7, which solves with the input `"7"`.
