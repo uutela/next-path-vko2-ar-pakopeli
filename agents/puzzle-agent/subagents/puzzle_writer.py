@@ -22,7 +22,11 @@ from agent_env import load_agent_environment  # noqa: E402
 
 load_agent_environment()
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+# gemini-2.5-flash answers 404 NOT_FOUND: models.list no longer returns it at
+# all, and the 2.5 line survives only as native-audio variants. The key is
+# fine — a bad key answers 401 or 403, not 404 on a model name. Overridable
+# with GEMINI_MODEL. See INBOX.md.
+DEFAULT_MODEL = "gemini-3.5-flash"
 DEFAULT_TIMEOUT_SECONDS = 20.0
 
 SYSTEM_PROMPT = """Kirjoitat yhden pulman suomeksi pakopeliin.

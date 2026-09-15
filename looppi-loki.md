@@ -30,6 +30,7 @@ Lue tämä, tai `git log --oneline` — yksi rivi per kierros.
 | 13 | 19 | Kartta avautuu pelaajan sijaintiin, ei ensimmäiseen pisteeseen | **170** | 0 | 19/19 | DONE |
 | 14 | 20 | Paikallaan seisova pelaaja saa tarjouksen ilman liikkumista | **171** | 0 | 19/19 | DONE |
 | 15 | 21 | Pulma-agentti: python + API, kytketty `PuzzleSource`n taakse | **180 + 38 pytest** | 0 | **20/20** | DONE |
+| 16 | – | Oletusmalli 2.5 → 3.5 (2.5 poistunut), kolme oikeaa pulmaa läpi | 180 + 38 | 0 | 20/20 | DONE |
 
 **Kaikki 21 tehtävää valmiit.** 180 vitest-testiä, 38 pytest-testiä, `npx tsc --noEmit` exit 0,
 19 selaintarkistusta, 0 konsoli- ja 0 sivuvirhettä — viimeinen ajo paikallisilla
