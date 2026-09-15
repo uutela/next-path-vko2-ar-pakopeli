@@ -121,3 +121,16 @@ One line per thing noticed while working. Not implemented, not detoured into.
   Introduced in rounds 3 and 4, when the fields became required, and not
   noticed until someone asked how the local file works. Corrected: the template
   is a whole pair and names the three ways a point disappears without an error.
+- **Two actionable points at the same distance are resolved by array order,
+  and the player cannot see that.** `nearestPointInRange` keeps the first point
+  with a strictly smaller distance, so when a pair's puzzle point and answer
+  point sit at the same coordinates the puzzle point always wins and the answer
+  point can never be reached — `Syötä koodi` never appears and the pair is
+  unfinishable. Found by a browser run against a local pair whose two points
+  were in the same place: the smoke timed out waiting for the offer.
+  Two candidate rules, neither implemented: a pair's puzzle point could stop
+  being actionable once its puzzle has been drawn (it has nothing left to
+  hand out), or a tie could prefer the point the player has not yet used.
+  The first also removes an oddity that exists today — standing at a collected
+  puzzle point still offers `Avaa tehtävä`, which re-shows the puzzle rather
+  than collecting anything.
