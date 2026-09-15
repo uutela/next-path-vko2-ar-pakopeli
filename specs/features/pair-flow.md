@@ -205,6 +205,23 @@ look like a broken keypad.
 **When** `actionablePoints(state, points)` is called
 **Then** the returned ids are exactly `["b-puzzle"]`, and a `LOCATION_CHANGED` at `NEAR_PUZZLE_A` returns a state whose `screen` is `{ kind: "MAP" }`
 
+### AC28: A puzzle point stops offering once its puzzle is drawn
+**Given** `COLLECTED_A` — pair `"a"` collected and unsolved
+**When** `actionablePoints(state, points)` is called
+**Then** the returned ids are exactly `["a-answer", "b-puzzle"]` — `a-puzzle` is absent, and a `LOCATION_CHANGED` at `NEAR_PUZZLE_A` returns a state whose `screen` is `{ kind: "MAP" }`
+
+A puzzle point has one thing to give and gives it once. While it kept
+offering, it also **shadowed its own answer point**: `nearestPointInRange`
+keeps the first point with a strictly smaller distance, so two actionable
+points at the same distance are separated by array order, which is invisible
+to the player. A pair whose two points share a location could therefore never
+be finished — the puzzle point won every tie and `Syötä koodi` never appeared.
+Found by a browser run that timed out waiting for it.
+
+The puzzle stays reachable: `Näytä pulma` on the map is what re-reads it, and
+that is where it belongs, because the player needs it while standing somewhere
+else entirely.
+
 ### AC9: A collected answer point is reachable
 **Given** `COLLECTED_A`
 **When** `LOCATION_CHANGED` is sent with `NEAR_ANSWER_A`
@@ -358,6 +375,8 @@ memory and a reset is how it ends.
 | `visiblePoints` | happy path | `COLLECTED_A` | called | `["a-answer", "a-puzzle", "b-puzzle"]` (AC6) |
 | `visiblePoints` | edge case | pair `a` solved | called | unchanged from AC6 (AC7) |
 | `actionablePoints` | edge case | pair `a` solved | called | `["b-puzzle"]` (AC8) |
+| `actionablePoints` | edge case | pair `a` collected, unsolved | called | `["a-answer", "b-puzzle"]` (AC28) |
+| `transition` | edge case | pair `a` collected, at its puzzle point | `LOCATION_CHANGED` | screen `MAP` (AC28) |
 | `transition` | edge case | pair `a` solved | `LOCATION_CHANGED` at `NEAR_PUZZLE_A` | screen `MAP` (AC8) |
 | `transition` | happy path | `COLLECTED_A` | `LOCATION_CHANGED` at `NEAR_ANSWER_A` | `NEAR` with `ANSWER_A` (AC9) |
 | `transition` | happy path | `NEAR` at `ANSWER_A` | `OPEN_ANSWER` | `ANSWER`, input `""` (AC10) |

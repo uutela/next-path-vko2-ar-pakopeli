@@ -20,12 +20,29 @@ export function visiblePoints(state: GameState, points: EscapePoint[]): EscapePo
 }
 
 /**
- * What proximity may offer. The same list, minus both points of a solved pair:
- * a solved pair stays on the map and stops asking for anything.
- * See specs/features/pair-flow.md AC8.
+ * What proximity may offer. The map's list, minus the points with nothing left
+ * to give:
+ *
+ * - both points of a solved pair — it stays on the map and stops asking;
+ * - the puzzle point of a pair whose puzzle has been drawn, because a puzzle
+ *   point has one thing to hand out and hands it out once.
+ *
+ * The second rule is not only tidiness. While a collected puzzle point kept
+ * offering, it shadowed its own answer point: `nearestPointInRange` keeps the
+ * first point with a strictly smaller distance, so two actionable points at
+ * the same distance are separated by array order — invisible to the player. A
+ * pair whose points share a location could never be finished.
+ *
+ * The puzzle stays reachable through `Näytä pulma` on the map, which is where
+ * it belongs: it is needed while standing somewhere else.
+ * See specs/features/pair-flow.md AC8 and AC28.
  */
 export function actionablePoints(state: GameState, points: EscapePoint[]): EscapePoint[] {
-  return visiblePoints(state, points).filter(
-    (point) => progressFor(state, point.pairId)?.solved !== true,
-  );
+  return visiblePoints(state, points).filter((point) => {
+    const progress = progressFor(state, point.pairId);
+    if (progress === undefined) {
+      return true;
+    }
+    return !progress.solved && point.role === 'answer';
+  });
 }
