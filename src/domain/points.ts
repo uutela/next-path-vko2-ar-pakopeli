@@ -38,6 +38,9 @@ export function isEscapePoint(value: unknown): value is EscapePoint {
   return (
     typeof point.id === 'string' &&
     point.id.length > 0 &&
+    (point.role === 'puzzle' || point.role === 'answer') &&
+    typeof point.pairId === 'string' &&
+    point.pairId.length > 0 &&
     typeof point.name === 'string' &&
     typeof point.radiusMeters === 'number' &&
     point.radiusMeters > 0 &&
@@ -66,4 +69,32 @@ export function composeSeed(repo: unknown, local: unknown): EscapePoint[] {
     Array.isArray(value) ? value.filter(isEscapePoint) : [];
 
   return mergePoints(valid(repo), valid(local));
+}
+
+/**
+ * Only the points that belong to a whole pair, sorted by id.
+ *
+ * A puzzle point with no answer point hands out a code that can never be
+ * entered, and an answer point with no puzzle point can never be revealed.
+ * Both are mistakes in a hand-typed file that the game cannot explain to the
+ * player, so they are dropped before the map draws them — the same treatment a
+ * malformed point already gets.
+ * See specs/features/points-store.md AC18 to AC20.
+ */
+export function withCompletePairs(points: EscapePoint[]): EscapePoint[] {
+  const byPair = new Map<string, EscapePoint[]>();
+
+  for (const point of points) {
+    const members = byPair.get(point.pairId) ?? [];
+    members.push(point);
+    byPair.set(point.pairId, members);
+  }
+
+  const complete = [...byPair.values()].filter(
+    (members) =>
+      members.filter((p) => p.role === 'puzzle').length === 1 &&
+      members.filter((p) => p.role === 'answer').length === 1,
+  );
+
+  return complete.flat().sort((a, b) => a.id.localeCompare(b.id));
 }

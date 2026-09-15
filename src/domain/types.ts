@@ -4,12 +4,21 @@ export interface Coordinates {
   longitude: number;
 }
 
+/**
+ * What a point is for. A pair is one of each, sharing a `pairId`: the puzzle
+ * point hands out the task and the answer point takes the code.
+ * See specs/features/pair-flow.md.
+ */
+export type PointRole = 'puzzle' | 'answer';
+
 /** A place the player must reach, and how close counts as reaching it. */
 export interface EscapePoint {
   id: string;
   name: string;
   coordinates: Coordinates;
   radiusMeters: number;
+  role: PointRole;
+  pairId: string;
 }
 
 /** One arithmetic task: two operands and the sum they add up to. */

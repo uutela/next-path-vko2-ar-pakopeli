@@ -15,9 +15,14 @@ export interface PointStore {
 }
 
 /**
- * The only module that touches device storage. Writes exactly the four fields
+ * The only module that touches device storage. Writes exactly the six fields
  * of an EscapePoint and nothing else, which is what keeps solved progress out
  * of storage by construction rather than by discipline.
+ *
+ * The list is explicit, so adding a field to EscapePoint without adding it
+ * here silently drops it: `role` and `pairId` were saved as nothing and the
+ * point failed validation on the next load, which in the field would look like
+ * a point that simply vanished.
  * See specs/features/points-store.md.
  */
 export function createPointStore(storage: KeyValueStore): PointStore {
@@ -39,11 +44,13 @@ export function createPointStore(storage: KeyValueStore): PointStore {
     },
 
     async saveStoredPoints(points: EscapePoint[]): Promise<void> {
-      const stripped = points.map(({ id, name, coordinates, radiusMeters }) => ({
+      const stripped = points.map(({ id, name, coordinates, radiusMeters, role, pairId }) => ({
         id,
         name,
         coordinates,
         radiusMeters,
+        role,
+        pairId,
       }));
       await storage.setItem(STORAGE_KEY, JSON.stringify(stripped));
     },

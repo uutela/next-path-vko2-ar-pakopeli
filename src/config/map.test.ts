@@ -34,6 +34,8 @@ const POINT_A: EscapePoint = {
   name: 'Eka',
   coordinates: { latitude: 60.1699, longitude: 24.9384 },
   radiusMeters: 20,
+  role: 'puzzle',
+  pairId: 'a',
 };
 const POINT_B: EscapePoint = { ...POINT_A, id: 'p2', coordinates: { latitude: 60.2, longitude: 25 } };
 

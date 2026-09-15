@@ -12,6 +12,8 @@ const POINT: EscapePoint = {
   name: 'Testipiste',
   coordinates: REFERENCE,
   radiusMeters: 20,
+  role: 'puzzle',
+  pairId: 'a',
 };
 
 describe('distanceMeters', () => {

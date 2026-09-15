@@ -29,12 +29,16 @@ const POINT_A: EscapePoint = {
   name: 'Puisto',
   coordinates: { latitude: 60.1699, longitude: 24.9384 },
   radiusMeters: 20,
+  role: 'puzzle',
+  pairId: 'a',
 };
 const POINT_B: EscapePoint = {
   id: 'p2',
   name: 'Kentta',
   coordinates: { latitude: 60.171, longitude: 24.94 },
   radiusMeters: 20,
+  role: 'puzzle',
+  pairId: 'a',
 };
 
 beforeEach(() => {
