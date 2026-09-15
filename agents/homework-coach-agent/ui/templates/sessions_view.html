@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Recent sessions</h2>
+  {% if not sessions %}
+    <p>No coaching sessions yet.</p>
+  {% endif %}
+  {% for session in sessions %}
+    <article>
+      <p><strong>{{ session.query_text }}</strong> <em>{{ session.intent }}</em></p>
+      <p>{{ session.answer }}</p>
+      <p>{{ session.created_at }}</p>
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}

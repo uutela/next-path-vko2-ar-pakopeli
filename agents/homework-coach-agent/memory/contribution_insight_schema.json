@@ -1,0 +1,11 @@
+{
+  "name": "contribution_insight_schema",
+  "description": "Cached weekly contribution ranking for a household snapshot.",
+  "fields": [
+    {"name": "insight_id", "type": "string", "required": true, "description": "Unique insight identifier."},
+    {"name": "reference_date", "type": "string", "required": true, "description": "YYYY-MM-DD used for the ISO week."},
+    {"name": "most_active_ids", "type": "array[string]", "required": true, "description": "Member ids with the most completions."},
+    {"name": "members", "type": "array[object]", "required": true, "description": "Per-member counts and points."},
+    {"name": "created_at", "type": "string", "required": true, "description": "ISO timestamp."}
+  ]
+}
