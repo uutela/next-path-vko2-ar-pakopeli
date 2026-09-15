@@ -136,9 +136,14 @@ has to cover values as well as shape.
 This was filed in `INBOX.md` as a robustness note. It was not a note.
 
 ### AC14: A hand-edited local file cannot crash the game
-**Given** a repo seed `[SEED_A]` and a local file holding `[{ id: "p1", coordinates: { latitude: "kuusikymmentä" } }]`
+**Given** a repo seed `[SEED_A, SEED_A_ANSWER]` — a whole pair — and a local file holding `[{ id: "p1", coordinates: { latitude: "kuusikymmentä" } }]`
 **When** `composeSeed(repoSeed, localSeed)` is called
-**Then** it returns `[SEED_A]`
+**Then** it returns both seed points, ids `["p1", "p2"]`
+
+The fixture was a single point until AC21 made `composeSeed` drop half pairs.
+This criterion is about a malformed *local* entry being ignored, and a
+criterion that fails for an unrelated reason proves nothing about what it
+names — so the fixture became a pair rather than the rule being relaxed.
 
 AC13 stopped the crash coming from device storage, and the same crash could
 still arrive through the front door: `App.tsx` cast both JSON imports to
@@ -190,6 +195,25 @@ point already is.
 **When** it is called
 **Then** the returned ids are exactly `["a-answer", "a-puzzle", "b-answer", "b-puzzle"]`
 
+### AC21: The seed the game receives holds only whole pairs
+**Given** a repo seed `[PUZZLE_A, ANSWER_A, PUZZLE_B]` and an empty local file
+**When** `composeSeed(repoSeed, localSeed)` is called
+**Then** the returned ids are exactly `["a-answer", "a-puzzle"]` — `b-puzzle` is dropped
+
+`withCompletePairs` is where the rule lives; this criterion is where it reaches
+the game. Without it the function is correct and unused, which is the same as
+absent.
+
+### AC22: A local file may complete a pair the repo seed only half-defines
+**Given** a repo seed `[PUZZLE_A]` and a local file `[ANSWER_A]`
+**When** `composeSeed(repoSeed, localSeed)` is called
+**Then** the returned ids are exactly `["a-answer", "a-puzzle"]`
+
+Completeness is judged after merging, not before. The committed seed is public
+and the local file is not, so the answer point of a real route can live only in
+the local file — and a rule applied too early would throw away the puzzle point
+for having no partner yet.
+
 ## Files to Modify
 | File | Change |
 |---|---|
@@ -227,6 +251,8 @@ point already is.
 | `loadStoredPoints` | error case | store holds one point and one non-point | called | only the point (AC13) |
 | `composeSeed` | error case | local file with a malformed entry | called | only the committed seed (AC14) |
 | `composeSeed` | happy path | local point overriding a seed id | called | the local point wins |
+| `composeSeed` | error case | repo seed with a half pair | called | the half pair dropped (AC21) |
+| `composeSeed` | happy path | repo half pair completed by the local file | called | both points kept (AC22) |
 | `isEscapePoint` | error case | role `"bonus"`, role missing, role `7` | called | `false` for each (AC15) |
 | `isEscapePoint` | error case | `pairId` `""`, missing, `null` | called | `false` for each (AC16) |
 | `isEscapePoint` | happy path | a well-formed pair member | called | `true` (AC17) |

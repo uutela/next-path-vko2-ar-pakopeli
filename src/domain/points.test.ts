@@ -96,20 +96,24 @@ describe('isEscapePoint', () => {
 });
 
 describe('composeSeed', () => {
+  // A whole pair, because composeSeed now drops half pairs (AC21). These
+  // criteria are about malformed local entries, not about pairing.
+  const SEED_PAIR = [SEED_A, STORED_B];
+
   it('AC14: a hand-edited local file cannot crash the game', () => {
     const local = [{ id: 'p1', coordinates: { latitude: 'kuusikymmentä' } }];
 
-    expect(composeSeed([SEED_A], local)).toEqual([SEED_A]);
+    expect(composeSeed(SEED_PAIR, local)).toEqual(SEED_PAIR);
   });
 
   it('AC14: a well-formed local point overrides the committed seed', () => {
     const moved = { ...SEED_A, name: 'Lähellä', coordinates: { latitude: 60.2, longitude: 25 } };
 
-    expect(composeSeed([SEED_A], [moved])).toEqual([moved]);
+    expect(composeSeed(SEED_PAIR, [moved])).toEqual([moved, STORED_B]);
   });
 
   it('AC14: anything that is not an array is ignored', () => {
-    expect(composeSeed([SEED_A], null)).toEqual([SEED_A]);
+    expect(composeSeed(SEED_PAIR, null)).toEqual(SEED_PAIR);
     expect(composeSeed(null, null)).toEqual([]);
   });
 });
@@ -170,5 +174,18 @@ describe('withCompletePairs', () => {
       'b-answer',
       'b-puzzle',
     ]);
+  });
+});
+
+describe('composeSeed — whole pairs only', () => {
+  it('AC21: the seed the game receives holds only whole pairs', () => {
+    expect(composeSeed([PUZZLE_A, ANSWER_A, PUZZLE_B], []).map((p) => p.id)).toEqual([
+      'a-answer',
+      'a-puzzle',
+    ]);
+  });
+
+  it('AC22: a local file may complete a pair the repo seed only half-defines', () => {
+    expect(composeSeed([PUZZLE_A], [ANSWER_A]).map((p) => p.id)).toEqual(['a-answer', 'a-puzzle']);
   });
 });

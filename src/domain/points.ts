@@ -68,7 +68,10 @@ export function composeSeed(repo: unknown, local: unknown): EscapePoint[] {
   const valid = (value: unknown): EscapePoint[] =>
     Array.isArray(value) ? value.filter(isEscapePoint) : [];
 
-  return mergePoints(valid(repo), valid(local));
+  // Completeness is judged after merging: the committed seed is public and the
+  // local file is not, so a real route's answer point may live only in the
+  // local file. See specs/features/points-store.md AC21 and AC22.
+  return withCompletePairs(mergePoints(valid(repo), valid(local)));
 }
 
 /**
