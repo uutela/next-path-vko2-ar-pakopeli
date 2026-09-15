@@ -1,6 +1,6 @@
 # Feature: Proximity detection
 
-**Status:** Draft
+**Status:** Done
 
 ## Problem Statement
 The game must know when the player is close enough to a point to open the

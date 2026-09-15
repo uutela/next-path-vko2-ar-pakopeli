@@ -14,5 +14,21 @@
     "radiusMeters": 20,
     "role": "answer",
     "pairId": "a"
+  },
+  {
+    "id": "p3",
+    "name": "Kauppatori",
+    "coordinates": { "latitude": 60.1680, "longitude": 24.9384 },
+    "radiusMeters": 20,
+    "role": "puzzle",
+    "pairId": "b"
+  },
+  {
+    "id": "p4",
+    "name": "Kauppatorin laituri",
+    "coordinates": { "latitude": 60.1670, "longitude": 24.9384 },
+    "radiusMeters": 20,
+    "role": "answer",
+    "pairId": "b"
   }
 ]

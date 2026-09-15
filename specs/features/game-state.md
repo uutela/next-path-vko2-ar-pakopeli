@@ -1,6 +1,18 @@
 # Feature: Game state machine
 
-**Status:** Draft
+**Status:** Superseded by `pair-flow.md`
+
+> **Superseded.** This spec describes the MVP1 state machine: four situations,
+> one point that both asks and answers, and `transition` drawing the puzzle
+> itself. `pair-flow.md` replaces it — `GameState` is now
+> `{ screen, pairs, notice? }`, a pair is two points, and drawing happens
+> outside the pure function because the source is asynchronous.
+>
+> Kept rather than deleted, because the reasoning below is still the reasoning:
+> AC5 (a puzzle stays open when the player drifts out of range) and AC13 (the
+> nearest point wins) survive unchanged in `pair-flow.md` as AC18 and AC19.
+> Where the two disagree, `pair-flow.md` is current and this file is history.
+> Nothing here should be read as describing the code as it stands.
 
 ## Problem Statement
 The game has four situations — looking at the map, standing at a point,

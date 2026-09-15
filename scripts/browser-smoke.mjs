@@ -144,9 +144,11 @@ record(
 );
 record('app-shell AC1 no offer while far', 0, await page.getByText('Avaa tehtävä').count());
 
+// Derived from the data, so adding a pair does not make this check lie.
+const PUZZLE_POINTS = all.filter((p) => p.role === 'puzzle').length;
 record(
-  'pair-flow only the puzzle point is on the map before collecting',
-  1,
+  'pair-flow only puzzle points are on the map before collecting',
+  PUZZLE_POINTS,
   await page.locator('.maplibregl-marker').count(),
 );
 
@@ -204,8 +206,8 @@ if (offers > 0) {
   // MapLibre draws its own marker elements on web; `marker` is the native
   // map's testID and does not exist here.
   record(
-    'pair-flow the answer point appears once earned',
-    2,
+    'pair-flow one answer point appears, and only the earned one',
+    PUZZLE_POINTS + 1,
     await page.locator('.maplibregl-marker').count(),
   );
   record('pair-flow the puzzle can be re-read from the map', 1, await page.getByText('Näytä pulma').count());

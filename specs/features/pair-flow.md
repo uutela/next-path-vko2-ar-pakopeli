@@ -1,6 +1,6 @@
 # Feature: Point pairs — puzzle point and answer point
 
-**Status:** Draft
+**Status:** Done
 
 ## Problem Statement
 MVP1 put the puzzle and its keypad at one point: walk there, solve, done. The
