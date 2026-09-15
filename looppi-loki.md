@@ -1,12 +1,17 @@
 # looppi-loki.md — yksi lohko per kierros
 
 Tämä tiedosto on sinua varten. Ei perusteluja, ei tarinaa: mitä tehtiin,
-mitkä numerot mitattiin, meneekö läpi. Pitkät selitykset ovat `prompts2.md`:ssä
-ja commit-viesteissä.
+mitkä numerot mitattiin, miten kierros päättyi. Pitkät selitykset ovat
+`prompts2.md`:ssä ja commit-viesteissä.
+
+**Jokainen kierros kirjaa rivinsä, myös keskeytynyt.** Viimeinen sarake kertoo
+lopputuloksen: `DONE`, `CHANGES_REQUIRED`, tai sen guardrailin nimi joka
+pysäytti kierroksen. Loki joka kirjaa vain onnistuneet kierrokset on ainoa
+laji jota kukaan ei tarvitse.
 
 Lue tämä, tai `git log --oneline` — yksi rivi per kierros.
 
-| # | Prio | Tehtävä | Testit | tsc | Selain | Verdict |
+| # | Prio | Tehtävä | Testit | tsc | Selain | Miten päättyi |
 |---|---|---|---|---|---|---|
 | 1 | 1 | Pari-speksi (27 kriteeriä, ei koodia) | 133 | 0 | – ei koske selainta | APPROVED |
 | 2 | 2 | Syötekatto 2 → 6 | 135 | 0 | 14/14 | APPROVED |

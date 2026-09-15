@@ -46,13 +46,22 @@ round finishes one.
 
    Required only for tasks that change something a browser can see.
 7. **Mark done.** Status `TODO` → `DONE` in this file, spec Status `Draft` →
-   `In Progress` → `Done`, **append one row to `looppi-loki.md`**, and commit.
+   `In Progress` → `Done`, and commit.
 
-   `looppi-loki.md` is the human-readable log: one row per round with the task,
-   the test count, the typecheck, the browser result and the verdict, plus a
-   short findings list. It is the answer to "how do I see only the results" —
-   this file says what to do, that one says what happened. A round that does
-   not add its row did not finish.
+8. **Log the round — whatever happened.** Append one row to `looppi-loki.md`:
+   the task, the test count, the typecheck, the browser result, and **how the
+   round ended**: `DONE`, `CHANGES_REQUIRED`, or the name of the guardrail that
+   stopped it.
+
+   This step is not part of marking a task done, and it does not depend on the
+   round succeeding. It ran as part of step 7 once, which meant only successful
+   rounds were ever written down — and a log that records only the rounds that
+   worked is the one kind of log nobody needs. A round that stops at step 3
+   still writes its row, saying so.
+
+   `looppi-loki.md` is the human-readable record: this file says what to do,
+   that one says what happened. Long reasoning belongs in `prompts2.md` and the
+   commit messages, not there.
 
 ### What browser testing does and does not cover
 
@@ -84,6 +93,10 @@ Read before the task list, and they outrank it.
 - **Two consecutive identical errors stop the loop.** Same failing test, same
   type error, same console error twice in a row: stop and report. Do not
   thrash.
+- **A round a guardrail stops still writes its log row first.** Step 8 runs
+  before the stopping, with the guardrail named in the outcome column. A round
+  that ends without a row in `looppi-loki.md` has hidden itself, and the rounds
+  worth reading are exactly the ones that did not finish.
 - **New ideas go to `INBOX.md` as one line.** Not implemented, not detoured
   into, not this round.
 - **Never touch `.env`, `.env.local` or `src/data/points.local.json`.** The
