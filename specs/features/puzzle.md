@@ -17,7 +17,7 @@ Three pure functions in `src/domain/puzzle.ts`:
 - `checkAnswer(puzzle: Puzzle, input: string): boolean` — parses `input` as a
   base-10 integer and compares it to `puzzle.answer`
 - `appendDigit(input: string, digit: string): string` — appends one digit,
-  refusing to grow past two characters, since 18 is the largest answer
+  refusing to grow past six characters, since an answer is at most six digits
 
 In production `rng` is `Math.random`. In tests it is a function returning a
 scripted sequence. Randomness is injected, never taken.
@@ -79,10 +79,28 @@ scripted sequence. Randomness is injected, never taken.
 **When** `appendDigit(input, "2")` is called
 **Then** it returns `"12"`
 
-### AC12: A third digit is ignored
+### AC12: A seventh digit is ignored
+**Given** `input = "123456"`
+**When** `appendDigit(input, "7")` is called
+**Then** it returns `"123456"` unchanged
+
+This criterion used to cap the input at two characters, because the largest
+answer an addition of two single digits can have is 18. That stopped being the
+rule when the answer became a code entered at a separate point: `pair-flow.md`
+sets the cap at six digits, a maximum rather than a length, so a shorter answer
+is still a valid answer and nothing is zero-padded.
+
+The cap was corrected here before `puzzle.test.ts` was touched. A test changed
+to match the code would have proved only that the code does what it does.
+
+### AC14: A third digit is appended
 **Given** `input = "12"`
 **When** `appendDigit(input, "3")` is called
-**Then** it returns `"12"` unchanged
+**Then** it returns `"123"`
+
+The case AC12 used to forbid. It has a criterion of its own because the old
+cap is exactly what this change removes, and a boundary that moved needs both
+of its sides pinned.
 
 ### AC13: Input containing anything but digits is rejected
 **Given** `puzzle = { left: 5, right: 2, answer: 7 }`
@@ -110,9 +128,10 @@ silently accepts `"7abc"` is a worse example than one that does not.
 - **What could break:** nothing depends on this yet. The trap is writing
   `Math.random()` inside `generatePuzzle` — every AC above becomes untestable
   the moment that happens, and the failure is silent.
-- **Two-character input** assumes the answer never exceeds 18. If the
-  difficulty is ever raised, AC12 and `appendDigit` both have to change; the
-  cap is a single constant so the change is one line.
+- **Six-character input** assumes no answer ever exceeds six digits. That is
+  no longer an assumption about arithmetic but a contract: `pair-flow.md` AC21
+  has the puzzle source reject a seven-digit answer before the game sees it, so
+  the keypad and the source agree by construction rather than by luck.
 - **No clear or backspace key** — see the open question in `ar-panel.md`.
 - **Rollback:** delete the two files.
 
@@ -135,7 +154,9 @@ silently accepts `"7abc"` is a worse example than one that does not.
 | `checkAnswer` | error case | answer `7`, input `"7e0"` | called | `false` (AC13) |
 | `appendDigit` | happy path | `""` + `"5"` | called | `"5"` (AC10) |
 | `appendDigit` | happy path | `"1"` + `"2"` | called | `"12"` (AC11) |
-| `appendDigit` | boundary | `"12"` + `"3"` | called | `"12"` (AC12) |
+| `appendDigit` | happy path | `"12"` + `"3"` | called | `"123"` (AC14) |
+| `appendDigit` | boundary | `"12345"` + `"6"` | called | `"123456"` — the cap is reached, not passed (AC12) |
+| `appendDigit` | boundary | `"123456"` + `"7"` | called | `"123456"` (AC12) |
 
 ## Spec Readiness checklist
 - [x] Every AC has a precise expected value — no "works correctly"

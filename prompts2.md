@@ -238,3 +238,20 @@ async source and dispatches `PUZZLE_DRAWN`, which is how an `await` stays out
 of a pure function.
 
 Verdict `APPROVED`. No browser check: nothing a browser can see changed.
+
+### Round 2 — Prio 2, the input cap
+
+`puzzle.md` AC12 was corrected first, because it *required* the two-character
+cap: a test changed to match the code would have proved only that the code does
+what it does. AC12 now caps at six and a new AC14 pins the case it used to
+forbid — a boundary that moved needs both of its sides stated. Then RED: two
+tests failed with `expected '12' to be '123'`, the old cap refusing the third
+digit, which is the right reason. Then GREEN: one constant. 135 tests pass,
+`npx tsc --noEmit` exits 0.
+
+The browser check did **not** complete, and not because of this change.
+`app-shell AC2 offer appears in range` expects one `Avaa tehtävä` and sees
+none. Two runs against a warm bundle gave the identical result; a third against
+the stashed-clean tree gave it again, which is what separates an inherited
+defect from a caused one. The loop's guardrail stops after two identical
+errors, so it was recorded in `INBOX.md` rather than chased.

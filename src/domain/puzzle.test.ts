@@ -92,7 +92,15 @@ describe('appendDigit', () => {
     expect(appendDigit('1', '2')).toBe('12');
   });
 
-  it('AC12: a third digit is ignored', () => {
-    expect(appendDigit('12', '3')).toBe('12');
+  it('AC14: a third digit is appended', () => {
+    expect(appendDigit('12', '3')).toBe('123');
+  });
+
+  it('AC12: the sixth digit reaches the cap without passing it', () => {
+    expect(appendDigit('12345', '6')).toBe('123456');
+  });
+
+  it('AC12: a seventh digit is ignored', () => {
+    expect(appendDigit('123456', '7')).toBe('123456');
   });
 });

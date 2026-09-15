@@ -94,3 +94,13 @@ One line per thing noticed while working. Not implemented, not detoured into.
   resolves leaves the player standing at the point with no puzzle and no
   notice. A timeout belongs in the adapter, not the state machine. Noted, not
   implemented.
+- **The browser smoke run is red on the tree this week forked from**, and was
+  red before any week 2 change: `app-shell AC2 offer appears in range` expects
+  one `Avaa tehtävä` and sees none, which then short-circuits
+  `ar-panel AC20 no camera on web` with "not reached — no offer to click". Two
+  runs against a warm bundle gave the identical result, and a third against the
+  stashed-clean tree at `ed8ecfb` gave it again — so it is inherited, not
+  caused. Nine checks run where week 1 reported fourteen. 0 console errors and
+  0 page errors either way, so whatever fails is silent. This blocks the
+  browser evidence for `looppi.md` prio 10, 11, 14 and 15. Not diagnosed
+  further: the guardrail stops the loop after two identical errors.
