@@ -102,6 +102,16 @@ Read before the task list, and they outrank it.
 - **Never touch `.env`, `.env.local` or `src/data/points.local.json`.** The
   local point file is hand-typed, gitignored and holds a place someone stands;
   `postinstall` creates it empty and nothing else may write it.
+- **Never print the contents of `src/data/points.local.json`** — not to the
+  terminal, not into a document, not into a commit message. Reading it to
+  decide where a test walks is fine; showing the values is not.
+  `browser-smoke.mjs` has said "the values are never printed: a point is a
+  place someone stands" since week 1, and this session printed them twice
+  anyway. Check a property instead: how many points, whether the JSON parses,
+  whether a pair is whole.
+- **Screenshots are location data too.** `.smoke/*.png` shows the map centred
+  on whatever points the app loaded, local ones included. Gitignored, but not
+  nothing — clear them when they have served their purpose.
 - **Never "fix" a failing test by editing the test.** The spec decides which of
   the two is wrong, and the spec is corrected first. This is how the
   two-character cap comes out: `puzzle.md` AC12 changes before
