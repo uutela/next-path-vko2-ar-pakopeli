@@ -367,3 +367,195 @@ worst kind of green.
 panel suite proves what the component asks Viro to draw and nothing about how
 Viro draws it. That needs a phone, outdoors, and it is a field round rather
 than a round of this loop.
+
+---
+
+## After the loop — what the person using it found
+
+The loop's goal ended when all its tasks were marked done. Everything below is
+the same project driven by hand, and the entries are worth reading for one
+reason: **every defect in this section was found by someone looking at the app,
+and none of them by a test.**
+
+A gap first, stated rather than hidden. Recording stopped after "Rounds 7 to
+10" and eight commits went by unrecorded, because the per-round entry had been
+part of a loop step and nothing replaced it when the loop ended. That is the
+same failure the post-mortem below describes — a record kept as a side effect
+of something else stops when that something else stops. Filled in afterwards,
+which makes these entries a reconstruction, and the transcript is the evidence
+for what was said.
+
+Two exchanges are deliberately absent: the coordinates in `points.local.json`
+are a place a person actually stands, and they belong in no file that a
+repository or a submission can reach. Prompts that discuss them are left out
+rather than paraphrased.
+
+### 11 — the round cap and the log
+> Katsotaan looppi.md:n kierroskattoa ja looppi-loki.md:tä. Kaksi asiaa ei
+> täsmää, ja haluan tietää mitä ajon aikana oikeasti tapahtui.
+>
+> 1. Katto oli kahdeksan kierrosta. Lokissa on kymmenen numeroitua kierrosta.
+>    Miten ajo jatkui katon yli — huomasitko katon, ja jos huomasit, millä
+>    perusteella jatkoit?
+>
+> 2. Lokin rivi 7 tekee priot 7–14, siis kahdeksan tehtävää yhtenä kierroksena,
+>    vaikka looppi.md sanoo "one task per round". Miksi ne menivät yhteen
+>    kierrokseen? Oliko kyse katon lähestymisestä vai jostain muusta?
+>
+> 3. Liittyykö tuo kierroksen kasvaminen siihen, että kierroksilla 7–14 toteutus
+>    syntyi ennen testejä — katosiko RED-GREEN-rytmi juuri siksi?
+>
+> 4. Mikä kierroksen raja oikeasti oli ajon aikana: mistä päätit että yksi
+>    kierros loppuu ja seuraava alkaa?
+>
+> Älä puolustele äläkä korjaa mitään. Vastaa lyhyesti, ja jos et tiedä varmaksi
+> mitä ajon aikana tapahtui, sano se sen sijaan että päättelisit jälkikäteen.
+
+→ The cap was never applied: the `/goal` call's "stop after 8 turns" was tracked
+and `looppi.md`'s own eight-round cap was not, and the two were conflated. Prios
+7–14 went into one round because the type change broke compilation until all of
+them landed — but that justifies bundling two or three rows, not eight, and the
+decision to take all eight came from the turn budget. The RED-GREEN rhythm was
+lost by choice rather than necessity: a stub had already been used twice that
+session to make a new module fail behaviourally, and it was not tried here. The
+round boundary silently became "one commit I can evidence" from round 7 onward,
+while the file still said "one task per round".
+
+Checked in git rather than recalled: **every log row from 1 to 7 was written in
+a single commit** at the end of the big round, and rows 8–10 in the final one.
+The ten numbered rounds are a reconstruction in two batches, not ten entries
+written as rounds ended.
+
+### 12 — the log must record failures too
+> Tarkista miten lisäsit looppi-loki.md:n looppi.md:hen. Jos lokirivin
+> kirjoittaminen on osa askelta joka merkitsee tehtävän DONE:ksi, se syntyy vain
+> onnistuneista kierroksista — ja juuri epäonnistuneet ovat ne jotka pitää nähdä.
+>
+> Siirrä lokirivi omaksi askeleekseen, joka ajetaan kierroksen lopuksi
+> riippumatta lopputuloksesta. Lisää siihen sarake jossa lukee miten kierros
+> päättyi: DONE, CHANGES_REQUIRED, tai mikä guardrail pysäytti sen.
+>
+> Lisää sama vaatimus myös guardrail-osioon: kierros jonka guardrail pysäyttää
+> kirjaa lokirivinsä ennen pysähtymistä.
+>
+> Älä toteuta muuta tässä yhteydessä.
+
+→ Correct, and the flaw was exactly as described: logging was inside step 7,
+"mark done", which only runs when a round succeeds. Logging became step 8, run
+at the end of every round whatever the outcome, with a column naming how it
+ended, and the guardrails gained the same requirement. Commit `21d8543`.
+
+### 13 — the local points file
+*In reply to: a question about how `points.local.json` is put to use. The
+prompts in this thread also concerned the contents of that file and are not
+quoted; only the work is recorded.*
+
+→ `postinstall` creates the file empty, `.gitignore` keeps it out of the
+repository, and `App.tsx` merges it over the committed seed with `composeSeed`.
+Answering the question turned up a defect: the template
+`ensure-local-points.mjs` prints had stopped being valid when `role` and
+`pairId` became required in rounds 3 and 4, so anyone following it got a point
+dropped in silence — by `isEscapePoint` for the missing fields, or by
+`withCompletePairs` for being half a pair. The template now shows a whole pair
+and names the three ways a point disappears without an error. Two guardrails
+came with it: the contents of that file are never printed, and screenshots are
+location data too. Commit `12c814b`.
+
+### 14 — a pair that could not be finished
+*In reply to: a browser run that timed out waiting for the answer point's
+offer, against a local pair whose two points were in the same place*
+
+> tee 2
+
+→ Of the two candidate rules, the chosen one: a puzzle point stops being
+actionable once its puzzle has been drawn. It has one thing to hand out and
+hands it out once. The reason it mattered was not tidiness — while it kept
+offering, it **shadowed its own answer point**, because two actionable points
+at the same distance are separated by array order, which the player cannot see.
+`pair-flow.md` AC28. One of the three new tests passed before the change and
+was rewritten: its fixture happened to sort the answer point first, so the tie
+fell the right way by accident. Commit `d0c48a4`.
+
+### 15 — a point in the wrong place
+> Siellä http://localhost:8082/ on kyllä joku ihme piste
+
+> nyt muuttui piste, tuli joku keskustasta. Mut tää mun local tiedoston piste on
+> tässä missä istun
+
+> laitoin et on pairID c, mut piste näkyy nyt simonkatu/mannerheimintien risteys
+
+→ Three observations, three different findings. The first pair of local points
+had been given the committed points' `pairId` but new ids, so that pair had two
+puzzle points and two answer points and `withCompletePairs` dropped the whole
+thing — including the person's own point — leaving only the committed pair
+visible. Changing the `pairId` fixed that.
+
+The third observation found something the repository had been carrying since
+week 1: **the seed point named `Senaatintori` is not at Senate Square.** Its
+coordinates came from a week 1 test fixture — a number chosen to make a
+distance assertion exact — about 800 m away, near Mannerheimintie. The points
+added in round 15 were derived by adding metres to that wrong origin and given
+landmark names of their own, so the invention compounded across four points.
+
+No test could have found it. Nothing can check that a name matches a place.
+
+### 16 — does the fix fix anything?
+> korjaa, mut korjaako se tämän ongelman muka?
+
+→ No, and saying so was the whole value of the question. Renaming the seed
+points corrects a real defect and does nothing about the symptom: the map
+centred on the first point by id, so a route of one's own opened a map of the
+seed's city with the player's point far off screen.
+
+> nimet koordinaattien mukaan
+
+→ Names changed, coordinates left alone — the distances are what the tests and
+the smoke run rely on. The new names are `Demoreitti A/B – tehtävä/vastaus`,
+which say what the points are and claim nothing else. Only one of the four
+could have been given a street name honestly, because only one had been checked
+against a map by a person; naming the other three from memory would have been
+the same mistake again. Commit `2bc725a`.
+
+### 17 — the map opens where the player is
+> tee initialCentre
+
+→ `src/config/map.ts` had said since week 1 that "a map centred anywhere else
+shows the player somewhere they are not", and the function did the opposite of
+its own comment. The player's position now wins, the first point is the
+fallback, and the named constant is the fallback after that. Both platforms
+configure an *initial* view state read once at mount, so the map is keyed on
+whether a position is known — it re-mounts once when the first position
+arrives and deliberately does not re-centre afterwards, because a map that
+jumps back every few metres cannot be panned.
+
+One test was rewritten before it could prove anything: it counted camera
+renders, which always grow, instead of mounts. Commit `f33f482`.
+
+### 18 — standing still
+> Pulma aukeaa nyt, mut miten vastauspisteen pitäisi avautua
+
+> eikös pulmapainike katoakin näkyvistä?
+
+> onko ongelma, kun en liiku?
+
+> Siellä on keräämisen jälkeen näytä pulma
+
+→ The third question found the defect, and it is the best prompt in this file.
+Proximity was recomputed **only** from a `LOCATION_CHANGED`, and a device that
+is not moving sends no more of them — `watchPositionAsync` notifies after a
+metre. So collecting a puzzle and closing it returned the screen to the map and
+left it there, with the player standing on an answer point that offered
+nothing.
+
+Testing at a desk is the only way to find this. Walking hides it completely.
+
+`app-shell.md` AC10 had fixed the same class of problem at start-up in week 1 —
+"a device that never moves still gets a position" — and this was the same
+mistake one screen later. The shell now re-dispatches the last known position
+when an event returns the player to the map. `pair-flow.md` AC29, commit
+`51ab4d3`.
+
+> toimii. Kiitos.
+
+→ 171 tests, `npx tsc --noEmit` exit 0, 19 browser checks with 0 console and 0
+page errors.
