@@ -76,7 +76,7 @@ export function PuzzlePanel({ state, onEvent, audio }: PuzzlePanelProps) {
     <ViroNode position={[0, 0, -PANEL_DISTANCE_METRES]}>
       <ViroFlexView viroTag="panel" materials={['puzzlePanel']} style={panel} />
       <ViroText
-        text={`${state.puzzle.left} + ${state.puzzle.right} = ?`}
+        text={state.puzzle.text}
         position={[0, 0.7, LAYER]}
         style={title}
       />

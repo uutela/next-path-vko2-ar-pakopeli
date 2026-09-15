@@ -56,7 +56,7 @@ export function PuzzlePanel({ state, onEvent, audio }: PuzzlePanelProps) {
 
   return (
     <View style={styles.panel} testID="panel">
-      <Text style={styles.title}>{`${state.puzzle.left} + ${state.puzzle.right} = ?`}</Text>
+      <Text style={styles.title}>{state.puzzle.text}</Text>
       <View style={styles.display} testID="input-display">
         <Text style={styles.title}>{state.input}</Text>
       </View>

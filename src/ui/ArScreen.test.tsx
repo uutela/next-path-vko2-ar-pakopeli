@@ -57,7 +57,7 @@ const POINT: EscapePoint = {
 const PUZZLE_STATE = {
   kind: 'PUZZLE',
   point: POINT,
-  puzzle: { left: 5, right: 2, answer: 7 },
+  puzzle: { text: '5 + 2 = ?', answer: 7 },
   input: '',
 } satisfies Extract<GameState, { kind: 'PUZZLE' }>;
 

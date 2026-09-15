@@ -13,7 +13,13 @@ Three pure functions in `src/domain/puzzle.ts`:
 
 - `generatePuzzle(rng: () => number): Puzzle` — calls `rng` exactly twice;
   each operand is `Math.floor(rng() * 9) + 1`, so both land in 1..9 and the
-  answer in 2..18. The first call produces `left`, the second `right`
+  answer in 2..18. It returns `{ text, answer }`: the text the player reads,
+  `"<first> + <second> = ?"`, and the answer as a number
+
+  `Puzzle` has no `left` and `right`. An agent's puzzle has no operands — it
+  has a question and a code — and `pair-flow.md` makes the agent a later
+  implementation of the same source. A record the local generator can fill but
+  the agent cannot is the wrong record.
 - `checkAnswer(puzzle: Puzzle, input: string): boolean` — parses `input` as a
   base-10 integer and compares it to `puzzle.answer`
 - `appendDigit(input: string, digit: string): string` — appends one digit,
@@ -27,30 +33,30 @@ scripted sequence. Randomness is injected, never taken.
 ### AC1: The lowest draw produces 1 + 1
 **Given** an `rng` returning `0` on every call
 **When** `generatePuzzle(rng)` is called
-**Then** it returns `{ left: 1, right: 1, answer: 2 }`
+**Then** it returns `{ text: "1 + 1 = ?", answer: 2 }`
 
 ### AC2: The highest draw produces 9 + 9
 **Given** an `rng` returning `0.9999999` on every call
 **When** `generatePuzzle(rng)` is called
-**Then** it returns `{ left: 9, right: 9, answer: 18 }`
+**Then** it returns `{ text: "9 + 9 = ?", answer: 18 }`
 
 ### AC3: A mid-range draw maps to the documented operands
 **Given** an `rng` returning `0.5` then `0.2`
 **When** `generatePuzzle(rng)` is called
-**Then** it returns `{ left: 5, right: 2, answer: 7 }`
+**Then** it returns `{ text: "5 + 2 = ?", answer: 7 }`
 
 ### AC4: The generator draws exactly twice
 **Given** an `rng` that counts its calls
 **When** `generatePuzzle(rng)` is called once
 **Then** the counter reads exactly `2`
 
-### AC5: The answer is always the sum of the operands
+### AC5: The answer is always the sum of the numbers the text names
 **Given** an `rng` returning any sequence of values in `[0, 1)`
 **When** `generatePuzzle(rng)` is called
-**Then** `answer === left + right`, and both operands are integers in `1..9`
+**Then** `text` matches `/^[1-9] \+ [1-9] = \?$/` and `answer` equals the sum of the two numbers in it
 
 ### AC6: The correct answer is accepted
-**Given** `puzzle = { left: 5, right: 2, answer: 7 }`
+**Given** `puzzle = { text: "5 + 2 = ?", answer: 7 }`
 **When** `checkAnswer(puzzle, "7")` is called
 **Then** it returns `true`
 
@@ -103,7 +109,7 @@ cap is exactly what this change removes, and a boundary that moved needs both
 of its sides pinned.
 
 ### AC13: Input containing anything but digits is rejected
-**Given** `puzzle = { left: 5, right: 2, answer: 7 }`
+**Given** `puzzle = { text: "5 + 2 = ?", answer: 7 }`
 **When** `checkAnswer(puzzle, "7abc")` is called
 **Then** it returns `false`
 
@@ -120,7 +126,8 @@ silently accepts `"7abc"` is a worse example than one that does not.
 ## Files to Modify
 | File | Change |
 |---|---|
-| `src/domain/types.ts` | Add the `Puzzle` interface: `left`, `right`, `answer`, all `number` |
+| `src/domain/types.ts` | `Puzzle` is `{ text: string; answer: number }` — no operands |
+| `src/adapters/puzzleSource.ts` | New. The async source `generatePuzzle` now sits behind |
 | `src/domain/puzzle.ts` | New. `generatePuzzle`, `checkAnswer`, `appendDigit` |
 | `src/domain/puzzle.test.ts` | New. One test per row of the testing strategy |
 
@@ -138,11 +145,11 @@ silently accepts `"7abc"` is a worse example than one that does not.
 ## Testing Strategy (MANDATORY)
 | Function | Case | Given | When | Then |
 |---|---|---|---|---|
-| `generatePuzzle` | boundary | `rng` returns `0` | called | `{ left: 1, right: 1, answer: 2 }` (AC1) |
-| `generatePuzzle` | boundary | `rng` returns `0.9999999` | called | `{ left: 9, right: 9, answer: 18 }` (AC2) |
-| `generatePuzzle` | happy path | `rng` returns `0.5`, `0.2` | called | `{ left: 5, right: 2, answer: 7 }` (AC3) |
+| `generatePuzzle` | boundary | `rng` returns `0` | called | `{ text: "1 + 1 = ?", answer: 2 }` (AC1) |
+| `generatePuzzle` | boundary | `rng` returns `0.9999999` | called | `{ text: "9 + 9 = ?", answer: 18 }` (AC2) |
+| `generatePuzzle` | happy path | `rng` returns `0.5`, `0.2` | called | `{ text: "5 + 2 = ?", answer: 7 }` (AC3) |
 | `generatePuzzle` | happy path | counting `rng` | called once | counter is `2` (AC4) |
-| `generatePuzzle` | property | 100 scripted draws in `[0,1)` | called | `answer === left + right`, operands in `1..9` (AC5) |
+| `generatePuzzle` | property | 100 scripted draws in `[0,1)` | called | text matches the pattern, `answer` is the sum in it (AC5) |
 | `checkAnswer` | happy path | answer `7`, input `"7"` | called | `true` (AC6) |
 | `checkAnswer` | error case | answer `7`, input `"8"` | called | `false` (AC7) |
 | `checkAnswer` | edge case | answer `7`, input `"07"` | called | `true` (AC8) |
