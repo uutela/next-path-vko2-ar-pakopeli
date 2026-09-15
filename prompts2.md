@@ -255,3 +255,31 @@ none. Two runs against a warm bundle gave the identical result; a third against
 the stashed-clean tree gave it again, which is what separates an inherited
 defect from a caused one. The loop's guardrail stops after two identical
 errors, so it was recorded in `INBOX.md` rather than chased.
+
+### Correction to round 2 — the browser check was never run against this repo
+
+The round 2 entry above says the browser check failed for a reason inherited
+from the fork. That was wrong, and the commit message `a3cb313` carries the
+same error into the history where it cannot be edited.
+
+Every smoke run had gone to `http://localhost:8081`, the script's default. A
+dev server for the **week 1** repository was already listening there. This
+project's own `npx expo start` had printed "Port 8081 is running ar-pakopeli in
+another window /Users/null/Projects/next-path-vko1-ar-pakopeli" followed by
+"Skipping dev server" — into a log file nobody read — so it never started, and
+every check ran against a different application.
+
+The control run made it worse rather than better: stashing the changes and
+re-running "on the clean tree" hit the same foreign server, which turned a
+wrong measurement into apparent proof that the defect was inherited. A repeated
+measurement is not an independent one.
+
+What followed was four rounds of careful work on a defect that does not exist:
+`navigator.geolocation` instrumented through Playwright, `expo-location`'s web
+implementation read line by line, a `createBrowserPositionProvider` adapter
+written TDD with four criteria and a fake, and `App.tsx` wired to use it on
+web. All of it removed. Started on port 8082, this repository passes all
+fourteen checks with 0 console errors and 0 page errors — with the original
+`expo-location` path, unchanged.
+
+Prio 2 therefore has its browser evidence after all: 14 PASS, 0 FAIL.

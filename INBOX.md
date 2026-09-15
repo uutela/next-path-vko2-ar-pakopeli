@@ -94,13 +94,22 @@ One line per thing noticed while working. Not implemented, not detoured into.
   resolves leaves the player standing at the point with no puzzle and no
   notice. A timeout belongs in the adapter, not the state machine. Noted, not
   implemented.
-- **The browser smoke run is red on the tree this week forked from**, and was
-  red before any week 2 change: `app-shell AC2 offer appears in range` expects
-  one `Avaa tehtävä` and sees none, which then short-circuits
-  `ar-panel AC20 no camera on web` with "not reached — no offer to click". Two
-  runs against a warm bundle gave the identical result, and a third against the
-  stashed-clean tree at `ed8ecfb` gave it again — so it is inherited, not
-  caused. Nine checks run where week 1 reported fourteen. 0 console errors and
-  0 page errors either way, so whatever fails is silent. This blocks the
-  browser evidence for `looppi.md` prio 10, 11, 14 and 15. Not diagnosed
-  further: the guardrail stops the loop after two identical errors.
+- ~~RESOLVED~~ **The browser smoke run was reported red on the forked tree. It
+  was not.** Every run had gone to `http://localhost:8081`, which the smoke
+  script defaults to and where a dev server for the *week 1* repository was
+  already listening: `npx expo start` had printed "Port 8081 is running
+  ar-pakopeli in another window /Users/null/Projects/next-path-vko1-ar-pakopeli"
+  and then "Skipping dev server", so this project's server never started and
+  every check ran against a different application. Repeating a wrong
+  measurement is what made it look inherited — the stashed-clean control run
+  hit the same foreign server. Started on port 8082 instead, this repo passes
+  all fourteen checks with 0 console errors and 0 page errors. **Run the smoke
+  as `node scripts/browser-smoke.mjs http://localhost:8082 .smoke` after
+  starting the server on that port, or check what is answering before believing
+  a result.**
+- An `expo-location` web defect was diagnosed in detail — instrumented
+  `navigator.geolocation`, library source read, a replacement adapter written
+  and tested — and none of it was real: it was the week 1 app being measured.
+  The adapter was removed rather than kept "in case". The lesson is cheaper
+  than the four rounds it cost: confirm the process under test belongs to the
+  repository under test, before instrumenting anything.
