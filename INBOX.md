@@ -208,3 +208,28 @@ One line per thing noticed while working. Not implemented, not detoured into.
   row and the player is told the agent gave up. Whether retries should back off,
   or whether a quota error should stop retrying at all, is a design decision —
   recorded, not taken.
+- **`agent_env.py` loads every `.env` and `.env.local` from here to the
+  filesystem root.** The walk is `while directory != directory.parent`, so on
+  this machine it reads six directories and loads two files; on another it
+  loads whatever happens to sit on the path. The agent needs one value from
+  them, the API key. Everything else those files hold ends up in the process
+  environment of a program that talks to a third party. The file comes from the
+  kit and is copied unchanged into every agent built on it. Not a vulnerability
+  today — nothing puts environment values into a prompt — but it is the widest
+  private-data surface the agent has, and it is wider than its job.
+- **The model's own output re-enters prompts by two routes**, and one of them
+  goes through a file. The written puzzle is sent to the solver
+  (`SOLVER_PROMPT + text`), and past puzzles come back from
+  `memory/data/issued_puzzles.json` into the writer's "do not repeat these"
+  block. The blast radius today is narrow: the solver's reply is reduced to the
+  first integer by a regex and compared, it has no tools and no file access, and
+  the writer's output passes `check_schema` first. The worst case is an
+  unusable puzzle passing solve-back, not an exfiltration. But
+  `issued_puzzles.json` is a prompt-injection surface, and that matters the day
+  anything other than the agent can write to it.
+- **The kit advertises `google_search`, `url_context` and `code_execution`** in
+  `agents/AGENTS.md`. This agent uses none of them, which is why it sits at two
+  of the fatal three rather than all three. Adopting the first two would put
+  untrusted content straight into a prompt that runs beside loaded environment
+  files and an outbound HTTPS client. Worth a deliberate decision rather than a
+  copy-paste from the example.
