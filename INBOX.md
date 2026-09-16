@@ -186,3 +186,25 @@ One line per thing noticed while working. Not implemented, not detoured into.
 - The kit's `agents/homework-coach-agent/memory/data/` is still not gitignored
   by name; the pattern added for `agents/*/memory/data/*` now covers it, but
   the example agent's own `.gitkeep` was committed before that rule existed.
+- **The 20-puzzle eval measured the API quota, not the puzzles.** The key's
+  free tier ran out during request 6; requests 7 to 20 all failed with `429
+  RESOURCE_EXHAUSTED` and never got a puzzle written. Five puzzle texts exist
+  out of twenty requested. 59 model calls, 241 s. Four puzzles passed every
+  check; one request died on 503s and two 20-second timeouts. **No attempt was
+  ever rejected by the schema check or the duplicate check**, and solve-back
+  reached a verdict at most five times — so this run says almost nothing about
+  how often the model writes an unusable puzzle. A rerun needs either a paid
+  tier or a delay between requests; both are decisions for the person who asked
+  for the measurement, so nothing was changed.
+- **The eval harness pairs solver calls to the wrong attempt.**
+  `eval/run_eval.py` records writer calls and solver calls in two lists and
+  pairs them by attempt number; a failed writer attempt makes no solver call,
+  so every later pairing in that request is off by one. Request 1 is labelled
+  "solve-back — solver said None" on the attempt it was accepted on. The
+  `Result:` lines come from the loop and are correct; the per-attempt verdict
+  lines are not. Corrected in the eval file's header, left unfixed in the code.
+- **Three attempts against a rate-limited API is three refusals, not three
+  tries.** `MAX_ATTEMPTS` retries immediately, so a 429 becomes three 429s in a
+  row and the player is told the agent gave up. Whether retries should back off,
+  or whether a quota error should stop retrying at all, is a design decision —
+  recorded, not taken.
