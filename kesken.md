@@ -1,168 +1,169 @@
-# kesken.md — mikä jäi todentamatta
+# kesken.md — what is unfinished or unverified
 
-Palautuksen liite. Kirjoitettu repon todellisesta tilasta: `INBOX.md`,
-`looppi-loki.md`, testiajot ja git-historia. Mitään ei ole pehmennetty eikä
-lisätty.
+A submission appendix, assembled from the repository's actual state: `INBOX.md`,
+`looppi-loki.md`, the test runs and the git history. Nothing has been softened
+and nothing has been added.
 
-Kaksi asiaa pidetään tässä erillään, koska niiden sekoittaminen on tapa jolla
-projekti näyttää valmiimmalta kuin on:
+Two things are kept apart here, because blurring them is exactly how a project
+comes to look more finished than it is:
 
-- **Todennettu** — ajettu, ja mikä komento sen näytti.
-- **Kirjoitettu mutta todentamatta** — koodi on olemassa ja testattu siltä osin
-  kuin testi ylettyy, mutta kukaan ei ole nähnyt sen toimivan oikeassa
-  ympäristössä.
+- **Verified** — run, and the command that showed it.
+- **Written but unverified** — the code exists and is tested as far as a test
+  can reach, but nobody has watched it work in the environment it is for.
 
 ---
 
-## 1. Todennettu, ja millä todisteella
+## 1. Verified, and by what evidence
 
-| Väite | Todiste | Ajettu |
+| Claim | Evidence | Run |
 |---|---|---|
-| Yksikkötestit menevät läpi | `npm test` → **180 testiä, 16 tiedostoa** | juuri nyt |
-| Tyypit ovat ehjät | `npx tsc --noEmit` → exit 0 | juuri nyt |
-| Agentin testit menevät läpi ilman verkkoa ja ilman API-avainta | `pytest` → **38 testiä, 0.3 s**, yksi niistä estää socket-yhteydet koko polulta | juuri nyt |
-| Web-peli kävelee koko parireitin läpi | `node scripts/browser-smoke.mjs http://localhost:8082 .smoke` → **20 tarkistusta, 0 konsoli-, 0 sivuvirhettä** | edellisellä kierroksella |
-| Pulmapiste antaa pulman tekstinä ilman näppäimistöä, vastauspiste ilmestyy vasta ansaittuna, koodi syötetään siellä | smoke-ajon nimetyt tarkistukset | edellisellä kierroksella |
-| Paikallaan seisova pelaaja saa tarjouksen ilman liikkumista | `AppShell`-testi joka toimittaa sijainnin **kerran** eikä liikuta pelaajaa | juuri nyt |
-| Agentti tuottaa pulman oikealla mallilla | kolme CLI-vetoa + neljä eval-ajossa = **7 pulmaa muistissa**, kaikki läpäisivät schema-, solve-back- ja duplikaattitarkistuksen | eval-ajossa |
+| The unit tests pass | `npm test` → **180 tests, 16 files** | just now |
+| The types hold | `npx tsc --noEmit` → exit 0 | just now |
+| The agent's tests pass with no network and no API key | `pytest` → **38 tests, 0.3 s**, one of which refuses socket connections for the whole path | just now |
+| The web game walks the whole pair route | `node scripts/browser-smoke.mjs http://localhost:8082 .smoke` → **20 checks, 0 console errors, 0 page errors** | previous round |
+| The puzzle point hands out a puzzle as text with no keypad, the answer point appears only once earned, and the code is typed there | named checks in the smoke run | previous round |
+| A stationary player is offered the answer point without moving | an `AppShell` test that delivers a position **once** and never moves the player | just now |
+| The agent produces a puzzle with the live model | three CLI draws plus four in the eval = **7 puzzles in memory**, each passing schema, solve-back and duplicate | during the eval |
 
-Yksi näistä on tarkistettu myös käsin: ensimmäinen oikea pulma oli
-kolikonjakotehtävä, vastaus 30. 16 pois, 14 jäljellä, 9 pois, 5 jäljellä,
-5 pois, arkku tyhjä. Menee tasan.
+One of these was also checked by hand: the first live puzzle was a
+coin-splitting problem answering 30. Sixteen taken, fourteen left, nine taken,
+five left, five taken, chest empty. It comes out exactly.
 
 ---
 
-## 2. Kirjoitettu mutta todentamatta
+## 2. Written but unverified
 
-### 2.1 AR-puolta ei ole kertaakaan ajettu laitteella
+### 2.1 The AR half has never been run on a device
 
-**Tosiasiallinen tila:** repossa ei ole `ios/`- eikä `android/`-hakemistoa,
-eli `expo prebuild` ei ole ajettu kertaakaan tässä projektissa. Sovellusta ei
-ole yritetty asentaa puhelimeen.
+**Actual state:** the repository has no `ios/` and no `android/` directory,
+which means `expo prebuild` has never been run here. The app has never been
+installed on a phone, and installing it was never attempted.
 
-Kaikki AR-todisteet ovat yksikkötestejä, ja ne kertovat **mitä komponentti
-pyytää Viroa piirtämään** — eivät miltä se näyttää laitteella. Ankkuroitu
-paneeli renderöityy testeissä tyngän läpi, joka muuttaa jokaisen Viro-elementin
-`div`:ksi. Se todistaa että komponentti pyytää kaksitoista näppäintä, oikeat
-mitat ja kaksipuolisen materiaalin. Se ei todista että mikään niistä näkyy.
+Every piece of AR evidence is a unit test, and those tests show **what the
+component asks Viro to draw** — not what it looks like on a device. The
+anchored panel renders through a stand-in that turns every Viro element into a
+`div`. That proves the component asks for twelve keys, the right dimensions and
+a double-sided material. It proves that none of them is visible.
 
-Todentamatta siis: ankkurointi, pintaseuranta, luettavuus päivänvalossa,
-näppäimen osumatarkkuus käsivarren mitan päästä, ja se pysyykö paneeli
-paikallaan kun sen ympäri kävelee.
+Unverified, therefore: anchoring, surface tracking, legibility in daylight,
+whether a key can be hit at arm's length, and whether the panel stays put when
+you walk around it.
 
-Selaimessa tätä ei voi todentaa: **web-buildi ei lataa Viroa lainkaan**, mikä
-on tarkoituksellista (`ar-panel.md` AC17), koska Viron web-tiedostot vaativat
-julkaisemattoman riippuvuuden joka kaataisi koko bundlen.
+The browser cannot verify any of this: **the web build loads no Viro at all**,
+which is deliberate (`ar-panel.md` AC17), because Viro's web files require a
+dependency that is not published and that would take down the whole bundle.
 
-Lisäksi `INBOX.md` sisältää vko1:stä periytyvän avoimen esteen: **sovellus ei
-käynnisty iOS-simulaattorissa Apple Siliconilla**, koska Viron plugin asettaa
-`EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64`. Jokainen natiiviajo vaatii
-fyysisen laitteen.
+`INBOX.md` also carries an open blocker inherited from week 1: **the app cannot
+run in the iOS simulator on Apple Silicon**, because Viro's plugin sets
+`EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64`. Every native run needs a
+physical device.
 
-### 2.2 Agentin pulmia ei ole nähty pelissä kertaakaan
+### 2.2 The agent's puzzles have never been seen in the game
 
-**Tosiasiallinen tila:** agentti on todettu toimivaksi **itsenäisesti
-komentoriviltä** ja API-testeillä. Sitä ei ole kertaakaan nähty pelin läpi.
+**Actual state:** the agent has been shown to work **on its own, from the
+command line**, and through its API tests. It has never once been seen through
+the game.
 
-Jokainen selainajo on tehty agentin ollessa sammutettuna. Smoke-ajon tuloste
-sanoo tämän suoraan: viimeisin lukema oli `the puzzle reads: "6 + 7 = ?"` —
-eli paikallisen laskugeneraattorin pulma, ei agentin. Ajossa on nimetty
-tarkistus `puzzle-agent absent: the local generator still produced the puzzle`,
-joka todistaa **varajärjestelmän**, ei agenttia.
+Every browser run was made with the agent switched off. The smoke output says
+so directly: the most recent reading was `the puzzle reads: "6 + 7 = ?"` — the
+local arithmetic generator's puzzle, not the agent's. The run contains a named
+check, `puzzle-agent absent: the local generator still produced the puzzle`,
+which proves **the fallback**, not the agent.
 
-Todentamatta siis koko ketju: agentin kirjoittama pulma → HTTP → `PuzzleSource`
-→ pelin tilakone → pulmaruutu → vastauspisteen näppäimistö → `checkAnswer`.
-Jokainen palanen on testattu erikseen, koko ketju ei kertaakaan.
+So the whole chain is unverified: a puzzle written by the agent → HTTP →
+`PuzzleSource` → the game's state machine → the puzzle screen → the answer
+point's keypad → `checkAnswer`. Every piece is tested separately; the chain has
+never been walked once.
 
-### 2.3 Miksi: kiintiö loppui
+### 2.3 Why: the quota ran out
 
-Jaetun API-avaimen ilmaistaso sallii 20 pyyntöä vuorokaudessa per malli.
+The shared API key's free tier allows 20 requests per day per model.
 
-**Mitattu tosiasia, ei arvio:** kirjoittaja ja ratkaisija käyttävät **samaa
-mallia** (`gemini-3.5-flash`, sama `DEFAULT_MODEL` molemmissa subagenteissa).
-Jokainen hyväksytty pulma maksaa siis vähintään **kaksi** vuorokausikiintiön
-pyyntöä — yhden kirjoitukseen, yhden solve-backiin. Uusinnat maksavat lisää.
+**Measured, not estimated:** the writer and the solver use the **same model**
+(`gemini-3.5-flash`, the same `DEFAULT_MODEL` in both subagents). Every accepted
+puzzle therefore costs at least **two** of the day's requests — one to write it,
+one for the solve-back. Retries cost more.
 
-Ennen ensimmäistä `429`-virhettä ehdittiin tehdä 3 CLI-vetoa (3 kirjoitusta +
-3 ratkaisua) ja eval-ajossa 9 kirjoitusyritystä + 3 ratkaisua — yhteensä 18
-kutsua. 429 tuli seuraavista. Se vastaa 20 pyynnön rajaa lähes tarkalleen.
+Before the first `429`, three CLI draws had been made (3 writes + 3 solves) and
+the eval had made 9 write attempts + 3 solves — eighteen calls in total. The
+429s began after that, which matches a 20-request limit almost exactly.
 
-Tästä seuraa suoraan: **20 pulman eval ei olisi voinut valmistua** ilmaistasolla
-millään asetuksella. Kiintiö riittää noin kymmeneen pulmaan vuorokaudessa, jos
-yksikään ei vaadi uusintaa.
+From which it follows directly: **a twenty-puzzle eval could not have completed**
+on the free tier under any settings. The quota is good for roughly ten puzzles a
+day, if not one of them needs a retry.
 
-### 2.4 Eval mittasi kiintiötä, ei pulmien laatua
+### 2.4 The eval measured the quota, not puzzle quality
 
-20 pyyntöä, 59 mallikutsua, 241 sekuntia. Tulos:
+20 requests, 59 model calls, 241 seconds:
 
 | | |
 |---|---|
-| Läpi ensimmäisellä yrityksellä | 2 |
-| Läpi uusinnan jälkeen | 2 |
-| Kieltäytymisiä | 16 |
+| Accepted on the first attempt | 2 |
+| Accepted after a retry | 2 |
+| Refused | 16 |
 
-**Pulmatekstejä syntyi viisi kahdestakymmenestä.** Kiintiö loppui kesken
-pyynnön 6; pyynnöt 7–20 kaatuivat kaikki `429 RESOURCE_EXHAUSTED` -virheeseen
-ilman että mallia päästiin pyytämään kirjoittamaan. Pyyntö 2 kuoli 503-virheisiin
-ja kahteen 20 sekunnin aikakatkaisuun.
+**Five puzzle texts were written out of twenty requested.** The quota ran out
+during request 6; requests 7 to 20 all failed with `429 RESOURCE_EXHAUSTED`
+without the model ever being asked to write. Request 2 died on 503s and two
+20-second timeouts.
 
-Kaksi lukua kertovat saman: 54 kirjoituskutsua mutta vain **5 ratkaisukutsua**.
+Two numbers say the same thing: 54 writer calls, but only **5 solver calls**.
 
-**Mitä tästä voi päätellä:** polku toimii päästä päähän, kieltäytyminen toimii,
-ja neljä pulmaa läpäisi jokaisen tarkistuksen.
+**What can be concluded:** the path works end to end, refusal works, and four
+puzzles passed every check.
 
-**Mitä tästä ei voi päätellä:** kuinka usein malli kirjoittaa kelvottoman
-pulman. **Yksikään yritys ei kaatunut schema- eikä duplikaattitarkistukseen**,
-ja solve-back ehti sanoa kantansa korkeintaan viisi kertaa. Luku 16/20 kertoo
-API:n kiintiöstä, ei mallin laadusta, ja sen lukeminen laatumittarina olisi
-väärin.
+**What cannot:** how often the model writes an unusable puzzle. **No attempt was
+ever rejected by the schema check or the duplicate check**, and solve-back
+reached a verdict at most five times. The figure 16/20 measures an API quota,
+not model quality, and reading it as a quality metric would be wrong.
 
-### 2.5 Eval-ajurissa on korjaamaton pariutusvirhe
+### 2.5 The eval harness has a known, unfixed pairing bug
 
-`agents/puzzle-agent/eval/run_eval.py` kirjaa kirjoitus- ja ratkaisukutsut
-kahteen erilliseen listaan ja parittaa ne yritysnumerolla. Kun kirjoitusyritys
-epäonnistuu, ratkaisukutsua ei synny, ja **kaikki myöhemmät parit samassa
-pyynnössä menevät yhden pieleen.**
+`agents/puzzle-agent/eval/run_eval.py` records writer calls and solver calls in
+two separate lists and pairs them by attempt number. When a writer attempt
+fails, no solver call happens, and **every later pairing in that request is off
+by one.**
 
-Näkyvä seuraus: pyyntö 1 on merkitty `solve-back — solver said None` juuri
-sillä yrityksellä jolla se hyväksyttiin.
+Visible consequence: request 1 is labelled `solve-back — solver said None` on
+the very attempt it was accepted on.
 
-`Result:`-rivit tulevat oikeasta silmukasta ja pitävät paikkansa.
-Yrityskohtaiset verdict-rivit eivät. Korjaus on kirjoitettu eval-tiedoston
-alkuun varoitukseksi; **koodia ei korjattu**, koska korjaus ja uusinta-ajo ovat
-tilaajan päätös.
+The `Result:` lines come from the real loop and are correct. The per-attempt
+verdict lines are not. A correction is written at the top of the eval file as a
+warning; **the code was not fixed**, because fixing it and re-running is the
+decision of whoever asked for the measurement.
 
-### 2.6 Agentin osoite on `localhost`
+### 2.6 The agent's address is `localhost`
 
-`src/config/agent.ts` osoittaa osoitteeseen `http://localhost:8002`. Se on
-oikein web-buildille ja simulaattorille. **Puhelimessa `localhost` on puhelin
-itse**, jossa agenttia ei ole.
+`src/config/agent.ts` points at `http://localhost:8002`. That is right for the
+web build and for a simulator. **On a phone, `localhost` is the phone itself**,
+where no agent is running.
 
-Peli ei hajoa: tavoittamaton agentti putoaa paikalliseen generaattoriin ja
-kertoo siitä konsoliin. Mutta laitteella agenttia **ei tulla koskaan
-käyttämään** ennen kuin osoite osoittaa kehityskoneeseen lähiverkossa. Tätä ei
-ole kokeiltu.
+The game does not break: an unreachable agent falls back to the local generator
+and says so in the console. But on a device the agent **will never be used**
+until the address points at the development machine on the same network. This
+has not been tried.
 
-### 2.7 Kolme onnistunutta vetoa ei ole otos
+### 2.7 Three successful live draws are not a sample
 
-Ennen evalia tehtiin kolme CLI-vetoa, kaikki läpi ensimmäisellä yrityksellä.
-Se todistaa että polku toimii. Se ei kerro mitään todennäköisyyksistä.
+Three CLI draws were made before the eval, all accepted on the first attempt.
+That proves the path works. It says nothing about probabilities.
 
-Yhteensä oikeita pulmia on nähty **seitsemän**. Yksikään ei ole kaatunut
-duplikaattitarkistukseen, mikä ei tarkoita että tarkistus olisi tarpeeton — se
-tarkoittaa ettei sitä ole vielä koeteltu.
+Seven live puzzles have been seen in total. None has been rejected by the
+duplicate check, which does not mean the check is unnecessary — it means it has
+not yet been tested.
 
 ---
 
-## 3. Mitä silmukka teki väärin
+## 3. What the loop got wrong
 
-Kaksi konkreettista kierrosta, molemmat `looppi-loki.md`:stä ja `INBOX.md`:stä.
+Two concrete rounds, both from `looppi-loki.md` and `INBOX.md`, and a third
+found afterwards.
 
-### 3.1 Selainajot mittasivat väärää repoa koko session ajan
+### 3.1 The browser checks measured the wrong repository for a whole session
 
-Smoke-skripti menee oletuksena osoitteeseen `http://localhost:8081`. Siinä
-portissa oli jo käynnissä **vko1-repon** kehityspalvelin. Tämän projektin oma
-`npx expo start` tulosti lokitiedostoon:
+The smoke script defaults to `http://localhost:8081`. A dev server for the
+**week 1 repository** was already listening on that port. This project's own
+`npx expo start` printed, into a log file:
 
 ```
 › Port 8081 is running ar-pakopeli in another window
@@ -170,88 +171,88 @@ portissa oli jo käynnissä **vko1-repon** kehityspalvelin. Tämän projektin om
 › Skipping dev server
 ```
 
-Kukaan ei lukenut sitä riviä. Jokainen tarkistus mittasi eri sovellusta.
+Nobody read that line. Every check measured a different application.
 
-Pahensin sitä itse: "kontrolliajo", jossa stashasin muutokset ja ajoin
-"puhtaalla puulla", osui **samaan vieraaseen palvelimeen**. Toistettu mittaus
-ei ole riippumaton mittaus, ja se muutti väärän tuloksen näennäiseksi
-todisteeksi siitä että vika oli periytynyt forkista.
+The loop made it worse itself: a "control run", stashing the changes and
+running "against the clean tree", hit **the same foreign server**. A repeated
+measurement is not an independent one, and it turned a wrong result into
+apparent proof that the defect was inherited from the fork.
 
-Seurauksena kaksi kierrosta meni huolelliseen työhön viasta jota ei ollut:
-`navigator.geolocation` instrumentoitiin, `expo-location`in web-toteutus
-luettiin rivi riviltä, ja `createBrowserPositionProvider`-adapteri kirjoitettiin
-TDD:llä neljällä kriteerillä ja fakella. **Kaikki purettiin.**
+The cost was three browser runs against the wrong server, one replacement
+adapter written TDD with four criteria and a fake, and the unwinding of it.
+`git log -S"createBrowserPositionProvider"` finds nothing: the work never even
+reached the history, because it was removed before a commit.
 
-Korjattu myöhemmin niin ettei se voi toistua: smoke kysyy palvelimelta sen oman
-projektijuuren ja poistuu koodilla 1 jos se ei ole tämä repo. Todennettu
-kolmella tavalla.
+Fixed later so that it cannot recur: the smoke script asks the server for its
+own project root and exits 1 unless it is this repository. Verified three ways.
+That fix exists because a human interrupted the run to ask whether the port
+problem had actually been fixed or had only been written into `INBOX.md`. It had
+only been written down. **The loop was content to record a finding and move on.**
 
-### 3.2 Kierroskattoa ei sovellettu, ja kahdeksan tehtävää pakattiin yhteen kierrokseen
+### 3.2 The round cap was never applied, and eight tasks went into one round
 
-`looppi.md`:n guardrail sanoo: *"Round cap: one task per round, eight rounds
-per session."* Tiedosto luettiin levyltä jokaisen kierroksen alussa. **Kattoa ei
-sovellettu kertaakaan.** Seurattiin `/goal`-kutsun kattoa ("stop after 8 turns")
-ja nämä kaksi sekoitettiin keskenään.
+`looppi.md`'s guardrail says: *"Round cap: one task per round, eight rounds per
+session."* The file was re-read from disk at the start of every round. **The cap
+was never applied.** The `/goal` call's cap ("stop after 8 turns") was tracked
+instead, and the two were conflated — two caps in two different units.
 
-Lokin rivi 7 tekee priot 7–14, eli kahdeksan tehtävää yhtenä kierroksena.
-Tekninen syy oli aito — `GameState`in muodon vaihto rikkoi käännöksen, eikä
-prioja voinut viedä maaliin erikseen — mutta se perustelee kahden tai kolmen
-rivin niputtamisen, ei kahdeksan. Päätös ottaa kaikki kahdeksan syntyi
-vuorobudjetista.
+Row 7 of the log does prios 7 to 14: eight tasks in one round. The technical
+reason was real — changing the shape of `GameState` broke compilation, and the
+tasks could not be finished separately — but that justifies bundling two or
+three rows, not eight. The decision to take all eight came from the turn budget.
 
-Samalla kierroksella **RED-GREEN-rytmi katosi**: toteutus kirjoitettiin ennen
-testejä. Testit siirrettiin `pair-flow.md`:n kriteereistä, jotka oli kirjoitettu
-kierroksella 1 ennen yhtäkään riviä koodia — puolustettavaa, mutta ei sama asia.
-Samassa sessiossa oli jo kahdesti käytetty keinoa joka olisi ratkaissut sen:
-tynkä, joka kääntyy mutta ei tee mitään, jolloin punainen on käytösvirhe. Sitä
-ei kokeiltu tässä.
+In that same round the **RED-GREEN rhythm was lost**: the implementation was
+written before the tests. The tests were transcribed from `pair-flow.md`,
+written in round 1 before any of that code existed — defensible, but not the
+same thing. Twice already in that session a technique had been used that would
+have solved it: a stub that compiles and does nothing, so the red is a
+behavioural failure. It was not tried here.
 
-Kierroksen raja vaihtui kesken ajon **"yhdestä tehtävästä" "yhteen committiin"**
-ilman että `looppi.md`:n sanamuoto muuttui.
+The round boundary silently became **"one commit" instead of "one task"**, while
+the wording in `looppi.md` stayed as it was.
 
-### 3.3 Loki kirjoitettiin jälkikäteen, ei kierroksittain
+### 3.3 The log was written afterwards, not round by round
 
-`git log -- looppi-loki.md` näyttää sen: **rivit 1–7 kirjoitettiin kaikki
-yhdessä commitissa** ison kierroksen lopussa, rivit 8–10 viimeisessä. Kymmenen
-numeroitua kierrosta on rekonstruktio kahdessa erässä, ei kymmenen kierroksen
-lopussa tehtyä merkintää.
+`git log -- looppi-loki.md` shows it: **rows 1 to 7 were all written in a single
+commit** at the end of the big round, and rows 8 to 10 in the last one. Ten
+numbered rounds are a reconstruction in two batches, not ten entries made as
+rounds ended.
 
-Syy oli rakenteellinen: lokirivin kirjoittaminen oli osa askelta joka merkitsee
-tehtävän valmiiksi, eli se olisi syntynyt vain onnistuneista kierroksista.
-Korjattu myöhemmin omaksi askeleekseen, joka ajetaan lopputuloksesta
-riippumatta ja jossa on sarake sille miten kierros päättyi.
+The cause was structural: writing the log row was part of the step that marks a
+task done, so it could only ever have been written for rounds that succeeded.
+Fixed later into a step of its own, run whatever the outcome, with a column for
+how the round ended.
 
-Sama vika toistui `prompts2.md`:ssä: kirjaus katkesi kun silmukka päättyi, ja
-kahdeksan committia meni kirjaamatta. Täydennetty jälkikäteen, ja tiedostossa
-sanotaan että kyseessä on rekonstruktio.
-
----
-
-## 4. Avoimet kohdat INBOX.md:ssä
-
-Yhteensä 13 avointa merkintää. Ne jotka vaikuttavat pelin toimintaan:
-
-- **Sovellus ei käynnisty iOS-simulaattorissa Apple Siliconilla** (vko1:stä).
-- **Vastauksia verrataan lukuina**, joten `"07"` vastaa 7:ää. Oikein niin kauan
-  kuin vastaukset tulevat laskugeneraattorilta, väärin sinä päivänä kun agentti
-  antaa koodin jossa alkunollat merkitsevät.
-- **Pulmalähde voi jäädä roikkumaan**, ei vain epäonnistua. Aikakatkaisu on
-  adapterissa, mutta `PUZZLE_FAILED` kattaa vain hylkäyksen.
-- **Kolme yritystä rate-limitattua API:a vasten on kolme kieltäytymistä**, ei
-  kolmea yritystä: `MAX_ATTEMPTS` uusii heti, joten yksi 429 muuttuu kolmeksi.
-- **`AppShell.collect`in tarkistus ei estä tuplanapautusta** — kaksi napautusta
-  ennen tilan päivittymistä kutsuvat molemmat lähdettä.
-- **Telineen omat tiedostot käyttävät yhä mallia `gemini-2.5-flash`**, jota ei
-  ole olemassa tällä avaimella. Ne ovat telineen tekijän tiedostoja eikä niitä
-  muutettu.
+The same failure repeated in `prompts2.md`: recording stopped when the loop
+ended, and eight commits went unrecorded. Filled in afterwards, and the file
+says that it is a reconstruction.
 
 ---
 
-## 5. Lyhyesti
+## 4. Open items in INBOX.md
 
-Peli toimii selaimessa päästä päähän, 180 yksikkötestiä ja 20 selaintarkistusta
-vihreinä. Agentti toimii komentoriviltä ja tuottaa oikeita, tarkistettuja
-pulmia.
+Thirteen open entries. The ones that affect how the game behaves:
 
-**Näitä kahta ei ole koskaan nähty yhdessä**, eikä kumpaakaan puhelimessa.
-Se on projektin todellinen tila.
+- **The app cannot run in the iOS simulator on Apple Silicon** (from week 1).
+- **Answers are compared as numbers**, so `"07"` answers 7. Right for as long as
+  answers come from the arithmetic generator, wrong the day an agent issues a
+  code whose leading zeros are meaningful.
+- **The puzzle source can hang as well as fail.** There is a timeout in the
+  adapter, but `PUZZLE_FAILED` covers only a rejection.
+- **Three attempts against a rate-limited API is three refusals**, not three
+  tries: `MAX_ATTEMPTS` retries immediately, so one 429 becomes three.
+- **`AppShell.collect`'s check does not prevent a double tap** — two presses
+  before the state updates both call the source.
+- **The kit's own files still default to `gemini-2.5-flash`**, which does not
+  exist for this key. They belong to the kit's author and were left unmodified.
+
+---
+
+## 5. In short
+
+The game works end to end in a browser, with 180 unit tests and 20 browser
+checks green. The agent works from the command line and produces real, checked
+puzzles.
+
+**These two have never been seen working together**, and neither has been seen
+on a phone. That is the project's actual state.

@@ -1,166 +1,164 @@
-# turvallisuus.md — kohtalokas kolmikko, tarkistettuna
+# turvallisuus.md — the fatal three, checked
 
-Palautuksen liite. Arvio `agents/puzzle-agent`-agentista kurssimateriaalin
-kolmen ominaisuuden kehyksellä:
+A submission appendix. An assessment of `agents/puzzle-agent` against the three
+properties from the course material:
 
-1. **Pääsy yksityiseen dataan** — lukee tiedostoja, tietokantaa, viestejä
-2. **Altistuminen epäluotetulle sisällölle** — lukee tekstiä jota ei itse kirjoittanut
-3. **Kyky viestiä ulos** — verkkokutsut, tiedostoihin kirjoittaminen
+1. **Access to private data** — reads files, a database, messages
+2. **Exposure to untrusted content** — reads text it did not write itself
+3. **The ability to communicate outward** — network calls, writing files
 
-Kaikki alla oleva on luettu koodista tälle tarkistukselle, ei muistista.
-Kaksi kohtaa tarkistettiin nimenomaisesti pyynnöstä, ja toinen niistä muutti
-lopputuloksen.
+Everything below was read from the code for this review, not recalled. Two
+points were checked specifically because they were asked for, and one of them
+changed the verdict.
 
 ---
 
-## 1. Inventaario
+## 1. Inventory
 
-| Osa | 1. Yksityinen data | 2. Epäluotettu sisältö | 3. Ulosvientikanava | Mitä se tosiasiassa tekee |
+| Part | 1. Private data | 2. Untrusted content | 3. Outward channel | What it actually does |
 |---|---|---|---|---|
-| `agent_env.py` | **kyllä** | ei | ei | Lataa `.env` ja `.env.local` **jokaisesta ylähakemistosta tiedostojärjestelmän juureen asti** |
-| `puzzle_core.py` | ei | ei | ei | Puhtaita funktioita. Ei tiedostoja, ei verkkoa, ei `genai`-importtia lainkaan |
-| `puzzle_agent.py` | ei | ei | ei | Orkestrointi. Kutsuu coren, muistin ja kaksi subagenttia |
-| `subagents/puzzle_writer.py` | ei | ks. §3 | **kyllä** | HTTPS Googlen Gemini-rajapintaan |
-| `subagents/puzzle_solver.py` | ei | ks. §3 | **kyllä** | HTTPS samaan rajapintaan |
-| `memory/memory.py` | osin | ks. §3 | **kyllä** | Lukee ja kirjoittaa `memory/data/issued_puzzles.json` — vain oman kansionsa sisällä |
-| `api/main.py` | ei | **ei** (ks. §2) | ei | `GET /health`, `POST /puzzle`. Kuuntelee `127.0.0.1:8002` |
-| `tools/generate_puzzle.py` | ei | ei | ei | Tulostaa JSONin stdoutiin |
-| `eval/run_eval.py` | ei | ei | kyllä | Mittausajuri. Kirjoittaa `eval/`-kansioon |
+| `agent_env.py` | **yes** | no | no | Loads `.env` and `.env.local` **from every parent directory up to the filesystem root** |
+| `puzzle_core.py` | no | no | no | Pure functions. No files, no network, no `genai` import at all |
+| `puzzle_agent.py` | no | no | no | Orchestration. Calls the core, the memory and the two subagents |
+| `subagents/puzzle_writer.py` | no | see §3 | **yes** | HTTPS to Google's Gemini API |
+| `subagents/puzzle_solver.py` | no | see §3 | **yes** | HTTPS to the same API |
+| `memory/memory.py` | partly | see §3 | **yes** | Reads and writes `memory/data/issued_puzzles.json` — inside its own folder only |
+| `api/main.py` | no | **no** (see §2) | no | `GET /health`, `POST /puzzle`. Listens on `127.0.0.1:8002` |
+| `tools/generate_puzzle.py` | no | no | no | Prints JSON on stdout |
+| `eval/run_eval.py` | no | no | yes | Measurement harness. Writes into `eval/` |
 
-**Mitä agentissa ei ole, tarkistettuna:** ei `subprocess`ia, ei `os.system`ia,
-ei `exec`ia eikä `eval`ia, ei `requests`ia, `urllib`ia eikä `httpx`ia. Ainoa
-verkkoyhteys on `genai.Client`, kahdessa paikassa. Ainoa kirjoitus levylle on
-oman kansion `memory/data/` ja `eval/`.
+**What the agent does not have, checked:** no `subprocess`, no `os.system`, no
+`exec` and no `eval`, no `requests`, `urllib` or `httpx`. The only network
+connection is `genai.Client`, in two places. The only disk writes are its own
+`memory/data/` and `eval/`.
 
-**Agentti ei lue pelin dataa lainkaan.** Ei `points.json`, ei
-`points.local.json`, ei pelaajan sijaintia, ei repon lähdekoodia. Tämä on
-merkityksellistä, koska `AGENTS.md` sanoo että pelaajan sijainti ei poistu
-laitteelta — agentti ei ole reitti jolla se voisi poistua, koska se ei koskaan
-näe sitä.
+**The agent does not read the game's data at all.** No `points.json`, no
+`points.local.json`, no player location, no repository source. That matters,
+because `AGENTS.md` says the player's location never leaves the device — and the
+agent is not a route by which it could, because it never sees it.
 
 ---
 
-## 2. Tarkistettu koodista: päätyykö pyynnön kenttä promptiin?
+## 2. Checked in code: does a request field reach a prompt?
 
-**Ei päädy.** `api/main.py`:
+**It does not.** From `api/main.py`:
 
 ```python
 async def puzzle(pair_id: str = "") -> Dict[str, Any]:
     return draw()
 ```
 
-`pair_id` otetaan vastaan ja **jätetään käyttämättä**. `draw()` kutsutaan ilman
-argumentteja, eikä sen allekirjoituksessa ole `pair_id`-parametria lainkaan —
-se ottaa vain kirjoittajan, ratkaisijan, muistin ja yritysmäärän.
+`pair_id` is accepted and **left unused**. `draw()` is called with no arguments,
+and its signature has no `pair_id` parameter at all — it takes only the writer,
+the solver, the store and the attempt count.
 
-Rajapinnassa ei ole muita kenttiä. Ei runkoa, ei otsikkoa, ei tekstiä
-pelaajalta. **Yksikään ulkopuolelta tuleva merkki ei päädy mallin promptiin.**
+The endpoint has no other fields. No body, no header, no text from the player.
+**Not one character from outside reaches a model prompt.**
 
-Tämä oli se kohta joka olisi tehnyt agentista kolmen kolmikon: pelaajan
-kirjoittama teksti promptissa olisi ollut suoraan kohta 2. Sitä ei ole.
+This is the point that would have made the agent three of the fatal three: text
+written by a player, inside a prompt, is category 2 directly. There is none.
 
-Rajapinta myös kuuntelee vain `127.0.0.1`, eli ei ole näkyvissä lähiverkkoon.
+The API also listens on `127.0.0.1` only, so it is not visible on the local
+network.
 
 ---
 
-## 3. Tarkistettu koodista: päätyykö mallin oma tuotos toisen kutsun promptiin?
+## 3. Checked in code: does the model's own output reach a second prompt?
 
-**Päätyy, kahta reittiä.**
+**It does, by two routes.**
 
-**Reitti A — kirjoittaja ratkaisijalle.** `puzzle_solver.py:52`:
+**Route A — writer to solver.** `puzzle_solver.py:52`:
 
 ```python
 contents=SOLVER_PROMPT + text
 ```
 
-`text` on mallin itsensä kirjoittama pulma. Se liitetään sellaisenaan toisen
-mallikutsun promptiin. Tämä on solve-backin koko idea: teksti lähetetään
-yksin, ilman vastausta, ja jos toinen kutsu päätyy eri lukuun, teksti ei kanna
-vastaustaan.
+`text` is the puzzle the model itself wrote. It is appended verbatim to a second
+model call's prompt. That is the whole idea of the solve-back: the text is sent
+alone, with no answer, and if the second call arrives at a different number, the
+text does not carry its answer.
 
-**Reitti B — muisti takaisin kirjoittajalle.** `puzzle_writer.py:85-86`:
+**Route B — memory back to the writer.** `puzzle_writer.py:85-86`:
 
 ```python
 recent = "\n".join(f"- {text}" for text in avoid[-10:])
 avoid_block = f"\n\nÄlä toista näitä äläkä kirjoita niiden kaltaisia:\n{recent}"
 ```
 
-`avoid` tulee `memory.texts()`-kutsusta, eli aiemmin annetuista pulmista, jotka
-malli on itse kirjoittanut ja jotka on tallennettu levylle. Mallin tuotos siis
-kiertää tiedoston kautta takaisin seuraavan kutsun promptiin.
+`avoid` comes from `memory.texts()` — the puzzles issued earlier, written by the
+model and stored on disk. The model's output therefore travels through a file
+and back into the next call's prompt.
 
-### Mitä se voi siellä tehdä
+### What it can do there
 
-Tämä on se kysymys johon vastaus ratkaisee vakavuuden, ja vastaus on
-rajattu — ei koska luotamme malliin, vaan koska **ulostulon reitti on kapea**:
+This is the question that decides how serious it is, and the answer is bounded —
+not because the model is trusted, but because **the exit path is narrow**:
 
-- Ratkaisijan vastauksesta poimitaan **säännöllisellä lausekkeella ensimmäinen
-  kokonaisluku**, ja se verrataan kirjoittajan ilmoittamaan lukuun. Mitään muuta
-  ratkaisijan tuottamasta tekstistä ei käytetä mihinkään.
-- Ratkaisijalla ei ole työkaluja, ei funktiokutsuja, ei tiedostopääsyä eikä
-  hakua. `GenerateContentConfig` sisältää vain lämpötilan.
-- Kirjoittajan tuotos kulkee `check_schema`n läpi ennen kuin se päätyy
-  mihinkään: sen on oltava objekti, `text` merkkijono, `answer` kokonaisluku
-  väliltä 0–999999.
+- The solver's reply is reduced by a regular expression to **the first integer**,
+  and that is compared to the number the writer claimed. Nothing else from the
+  solver's text is used for anything.
+- The solver has no tools, no function calls, no file access and no search. Its
+  `GenerateContentConfig` carries a temperature and nothing more.
+- The writer's output passes `check_schema` before it reaches anything: it must
+  be an object, `text` a string, `answer` an integer between 0 and 999999.
 
-**Pahin uskottava seuraus:** pulmatekstiin upotettu ohje saa ratkaisijan
-tulostamaan halutun luvun, jolloin solve-back on samaa mieltä ja **kelvoton
-pulma läpäisee tarkistuksen**. Se on oikeellisuushyökkäys, ei tietovuoto:
-mitään yksityistä ei lähde ulos, koska mitään yksityistä ei ole promptissa.
+**The worst credible consequence:** an instruction embedded in a puzzle text
+makes the solver print a chosen number, the solve-back agrees, and **an unusable
+puzzle passes the check**. That is a correctness attack, not a data leak:
+nothing private leaves, because nothing private is in the prompt.
 
-Toinen, teoreettisempi: jos jokin muu prosessi pystyisi kirjoittamaan
-`memory/data/issued_puzzles.json`-tiedostoon, sen sisältö päätyisi kirjoittajan
-promptiin reittiä B. Tällä hetkellä siihen kirjoittaa vain agentti itse, mutta
-**tiedosto on prompti-injektion pinta**, ja se on syytä tietää ennen kuin
-muistia jaetaan minkään muun kanssa.
+A second, more theoretical one: if some other process could write to
+`memory/data/issued_puzzles.json`, its contents would reach the writer's prompt
+by route B. Today only the agent writes it, but **that file is a
+prompt-injection surface**, and it is worth knowing before the memory is shared
+with anything else.
 
 ---
 
-## 4. Täyttyykö kaksi vai kolme?
+## 4. Two of three, or three?
 
-**Kaksi kolmesta.** Nyrkkisääntö pitää.
+**Two of three.** The rule of thumb holds.
 
-| | Täyttyykö | Millä perusteella |
+| | Met | On what basis |
 |---|---|---|
-| 1. Pääsy yksityiseen dataan | **kyllä, kapeasti** | `agent_env.py` lataa `.env` ja `.env.local` jokaisesta yläkansiosta juureen asti. Tällä koneella se on kaksi tiedostoa repon juuresta; toisella koneella se voi olla mitä tahansa mitä polulla sattuu olemaan. Agentti tarvitsee niistä yhden arvon. Pelin dataa se ei lue lainkaan |
-| 2. Altistuminen epäluotetulle sisällölle | **ei ulkopuolelta** | Yksikään pyynnön kenttä ei päädy promptiin. Ei hakua, ei URL-noutoa, ei käyttäjän tekstiä. Mallin oma tuotos kiertää promptiin kahta reittiä (§3), mikä on kohdan heikko, itseensä viittaava muoto — ei hyökkääjän hallitsemaa sisältöä |
-| 3. Kyky viestiä ulos | **kyllä** | HTTPS Googlen rajapintaan. Tiedostokirjoitukset vain omaan kansioon |
+| 1. Access to private data | **yes, narrowly** | `agent_env.py` loads `.env` and `.env.local` from every parent directory up to the root. On this machine that is two files from the repository root; on another it is whatever happens to sit on the path. The agent needs one value out of them. It does not read the game's data at all |
+| 2. Exposure to untrusted content | **not from outside** | No request field reaches a prompt. No search, no URL fetching, no player text. The model's own output travels into prompts by two routes (§3), which is the weak, self-referential form of this property — not attacker-controlled content |
+| 3. Ability to communicate outward | **yes** | HTTPS to Google's API. File writes inside its own folder only |
 
-Yhdistelmä 1 + 3 on hallittavissa, koska niiden väliltä puuttuu se mikä tekisi
-siitä vuotokanavan: **mikään ei syötä agentille ohjetta ulkopuolelta.** Avain
-menee Googlelle koska se on avaimen tarkoitus; muuta yksityistä ei ole
-promptissa, koska promptissa on vain kiinteä ohjeteksti ja mallin omat aiemmat
-pulmat.
+The combination of 1 and 3 is manageable, because the thing that would make it a
+leak channel is missing: **nothing feeds the agent an instruction from outside.**
+The key goes to Google because that is what the key is for; nothing else private
+is in a prompt, because a prompt contains only fixed instruction text and the
+model's own earlier puzzles.
 
-### Mikä kääntäisi tämän kolmeksi
+### What would turn this into three
 
-Yksikin näistä riittäisi, ja kaksi ensimmäistä olisi helppo tehdä vahingossa:
+Any one of these would do it, and the first two would be easy to do by accident:
 
-- **`pair_id`:n tai minkä tahansa pyynnön kentän välittäminen promptiin.**
-  Yhden rivin muutos, ja pelaajan hallitsema teksti olisi promptissa.
-- **Telineen mainostamien Gemini-työkalujen käyttöönotto.**
-  `agents/AGENTS.md` luettelee `google_search`, `url_context` ja
-  `code_execution`. Ensimmäiset kaksi tuovat epäluotetun sisällön suoraan
-  promptiin, kolmas tuo koodin suorituksen. Tämä agentti ei käytä yhtäkään.
-- **Agentin päästäminen lukemaan pelin tiedostoja**, esimerkiksi pisteiden
-  nimiä pulmien paikallistamiseksi. `points.local.json` on paikka jossa joku
-  seisoo.
-- **Rajapinnan avaaminen `0.0.0.0`:aan** laitetestausta varten. Silloin kuka
-  tahansa lähiverkossa voi kutsua sitä.
+- **Passing `pair_id`, or any request field, into the prompt.** A one-line
+  change, and player-controlled text would be in a prompt.
+- **Adopting the Gemini tools the kit advertises.** `agents/AGENTS.md` lists
+  `google_search`, `url_context` and `code_execution`. The first two put
+  untrusted content straight into a prompt; the third adds code execution. This
+  agent uses none of them.
+- **Letting the agent read the game's files**, for instance point names to
+  localise the puzzles. `points.local.json` is a place where somebody stands.
+- **Binding the API to `0.0.0.0`** for device testing. Anyone on the local
+  network could then call it.
 
 ---
 
-## 5. Mitä kirjattiin, mitä ei muutettu
+## 5. What was recorded, and what was not changed
 
-Koodiin ei koskettu. Kolme merkintää `INBOX.md`:ssä:
+No code was touched. Three entries in `INBOX.md`:
 
-1. `agent_env.py` kävelee tiedostojärjestelmän juureen ja lataa jokaisen
-   löytämänsä ympäristötiedoston, vaikka agentti tarvitsee yhden avaimen.
-2. Mallin tuotos palaa promptiin kahta reittiä, ja muistitiedosto on
-   prompti-injektion pinta jos jokin muu pääsee kirjoittamaan siihen.
-3. Telineen omat esimerkit mainostavat hakua, URL-kontekstia ja koodin
-   suoritusta; niiden käyttöönotto tässä agentissa kääntäisi arvion kolmeen
-   kolmesta.
+1. `agent_env.py` walks to the filesystem root and loads every environment file
+   it finds, though the agent needs one key.
+2. The model's output returns to a prompt by two routes, and the memory file is
+   a prompt-injection surface if anything else can write to it.
+3. The kit's own examples advertise search, URL context and code execution;
+   adopting any of them in this agent would turn this assessment into three of
+   three.
 
-Mikään näistä ei ole tämänhetkinen haavoittuvuus. Ne ovat kohdat joissa
-seuraava muutos voi tehdä siitä sellaisen.
+None of these is a vulnerability today. They are the places where the next
+change could make one.
