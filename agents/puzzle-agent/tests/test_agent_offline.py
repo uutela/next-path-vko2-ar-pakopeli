@@ -86,10 +86,11 @@ def test_no_api_key_is_a_visible_refusal_not_an_invented_puzzle(store, monkeypat
     The key is forced absent at the function that reads it, not by deleting
     environment variables. Deleting them does not work and quietly does the
     opposite: `load_agent_environment()` runs when the subagent is imported,
-    which happens *after* the deletion, and loads `.env.local` from a parent
-    directory — so an earlier version of this test made a real network call
+    which happens *after* the deletion, and loads the agent folder's
+    `.env.local` — so an earlier version of this test made a real network call
     with a real key and passed for the wrong reason until the model answered
-    404.
+    404. The file was then a parent directory's; it is now the agent's own
+    (AC16), and deleting still does not work.
     """
     import subagents.puzzle_writer as writer_module
 

@@ -208,8 +208,9 @@ One line per thing noticed while working. Not implemented, not detoured into.
   row and the player is told the agent gave up. Whether retries should back off,
   or whether a quota error should stop retrying at all, is a design decision —
   recorded, not taken.
-- **`agent_env.py` loads every `.env` and `.env.local` from here to the
-  filesystem root.** The walk is `while directory != directory.parent`, so on
+- ~~RESOLVED~~ **`agent_env.py` loads every `.env` and `.env.local` from here to the
+  filesystem root.** Now loads its own folder only — `puzzle-agent.md` AC16,
+  AC17; the key moved to `agents/puzzle-agent/.env.local`. The walk is `while directory != directory.parent`, so on
   this machine it reads six directories and loads two files; on another it
   loads whatever happens to sit on the path. The agent needs one value from
   them, the API key. Everything else those files hold ends up in the process
