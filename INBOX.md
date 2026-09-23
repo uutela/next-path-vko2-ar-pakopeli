@@ -244,3 +244,5 @@ One line per thing noticed while working. Not implemented, not detoured into.
   is not recorded, so the distribution is unknown. If it holds, most draws in
   the game fall back to the local generator. Raising the timeout, a faster
   model, or drawing ahead of time are the options — not chosen here.
+- ~~RESOLVED~~ **The agent API sends no CORS headers, so the web build can never read its answer** (now allowed for :8082 only — `puzzle-agent.md` AC22, AC23; a real Chromium page read a live puzzle, 46 s, two attempts) — `fetch` from :8082 to :8002 is blocked and every draw falls back to the local generator. Found 2026-09-23 while starting the demo; one live POST took 14.8 s.
+- **`test_api.py::test_a_refusal_is_a_200_with_a_reason` goes online when run alone.** It deletes the key env vars, then the first import of a subagent reloads `agents/puzzle-agent/.env.local` — a real Gemini call (19 s) and a failure, because a real puzzle comes back. In the full suite it passes only because earlier tests imported the subagents first. AC8 says `api_key()` returning `None`; the test should force that, as `test_agent_offline.py` does.

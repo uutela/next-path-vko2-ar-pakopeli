@@ -610,3 +610,59 @@ which would send most real draws to the local generator. Recorded, not fixed.
 > Tee
 
 → Two commits: the key's place, then the three fixes.
+
+> ja sit lopetetaan promptauksen tallennus
+
+> push
+
+→ Recording stopped here and resumed at entry 24 by request, with the
+messages in between added afterwards. Two commits pushed to `main`.
+
+### 21 — what is on the remote
+> ja eihän meil nyt vaan oo salaisuuksia tai mun lokaatiota tuolla remotessa?
+
+→ Checked the whole pushed history, not the current tree. No env file,
+`points.local.json` or memory file was ever committed; no string shaped like a
+Google key exists in any revision — the only key assignments are the test
+placeholders. For location, every coordinate-like number in the history was
+paired and measured against the local points without printing either: the
+nearest is about 8.2 km away, the seed and map fallback in the same city. No
+images were ever committed. The commits carry a name and an email, as they
+always do.
+
+### 22 — the slides
+> tee hyvä "slideset" saa olla vaikka html-sivu meidän docs kansioon vaikka
+> jossa pieni demo mitä tehty
+
+> ja laita slidesettiin noita esimerkkejä
+
+→ `docs/esitys.html`: one self-contained page, eleven slides, no external
+files. Two demos — a playable round on an abstract grid (no real coordinates,
+on purpose) that follows the game's rules, and the agent's check chain
+animated through four branches with the reason strings the code produces.
+The examples are four puzzles the live model wrote, each with the hand check.
+
+### 23 — demoing it in a browser
+> Ja sit jos joudun kohta demoomaan tätä, niin laitas meidän serveri päälle.
+> Testaan nyt vaan web-käyttöliittymällä. Miten voin feikata mun lokaation tai
+> miten kantsis tehdä? Laitanko vaan sinne mun lokaaliin location.jsoniin mun
+> nykyisen lokaation? Ja ne pitäisi avautua peräkkäin? Miten voin nollata
+> silleen et uusiksi eka pulma ja sit vastauspaikka
+
+→ Location in the web build comes from the browser, not a file, and a laptop's
+Wi-Fi fix is too coarse for a 20 m radius — so the answer was Chrome's Sensors
+panel with the two points' coordinates, switched in order, and a page reload
+to start over. Starting the servers found the reason the agent's puzzle had
+never been seen in the game: the API sent no CORS headers, so the browser
+discarded every answer and the game fell back to arithmetic.
+
+### 24 — CORS
+> Tee korjaus. Ja lisää tolta osin sopivat promptit prompti-tiedostoon
+
+→ `puzzle-agent.md` AC22 (the web build's origin is allowed, red first: no
+header) and AC23 (any other origin is not; passed at once and was shown to
+fail by allowing `*`). A real Chromium page on :8082 then read a live puzzle
+— in 46 s over two attempts, past the game's 25 s timeout, so the header is
+fixed and the latency is not. Found on the way and recorded, not fixed:
+`test_api.py`'s no-key test goes online when run alone. 47 agent tests,
+180 unit tests, `npx tsc --noEmit` exit 0.

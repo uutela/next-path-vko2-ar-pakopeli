@@ -174,6 +174,20 @@ that request was paired with the wrong answer.
 The 2026-09-16 run spent its quota by request 6. A delay keeps a run under a
 per-minute limit, so that what it measures is the puzzles.
 
+### AC22: The web build may read the agent's answer
+**Given** a `POST /puzzle` carrying `Origin: http://localhost:8082`
+**When** the agent answers
+**Then** the response carries `access-control-allow-origin: http://localhost:8082`
+
+Without it the browser blocks the response, `fetch` rejects, and every draw
+in the web build falls back to the local generator — which is why the agent's
+puzzle had never been seen in the game. The native app is not subject to CORS.
+
+### AC23: Any other origin is not allowed
+**Given** a `POST /puzzle` carrying `Origin: http://example.com`
+**When** the agent answers
+**Then** the response carries no `access-control-allow-origin` header
+
 ## Files to Modify
 | File | Change |
 |---|---|
@@ -202,6 +216,8 @@ per-minute limit, so that what it measures is the puzzles.
 | `agents/puzzle-agent/eval/eval-2026-09-23.md` | New. The rerun against the live model |
 | `.gitignore` | `__pycache__/`, and the committed bytecode untracked |
 | `turvallisuus.md` | The env loader's scope, as it is now |
+| `agents/puzzle-agent/api/main.py` | CORS for the web build's origin only (AC22, AC23) |
+| `agents/puzzle-agent/tests/test_api.py` | AC22, AC23 |
 | `kesken.md` | Test count, live-model row, and 2.4 / 2.5 marked superseded and fixed |
 
 ## Risk
@@ -236,6 +252,9 @@ per-minute limit, so that what it measures is the puzzles.
 - **Live, 2026-09-23:** 19 of 20 accepted, all 19 answers right by hand, no
   attempt rejected by any check and no 429 — so AC18 is proven offline only.
   A draw averaged about 33 s against a 25 s game timeout (`INBOX.md`).
+- **CORS, 2026-09-23:** proven in a real Chromium page on :8082 reading a
+  live draw — which took 46 s over two attempts, past the game's 25 s. The
+  header is fixed; the latency in `INBOX.md` is not.
 - **Rollback:** point `App.tsx` back at `createLocalPuzzleSource(Math.random)`.
   The agent is a separate process and a separate folder; nothing in `domain/`
   knows it exists.
@@ -273,6 +292,8 @@ per-minute limit, so that what it measures is the puzzles.
 | `generate_puzzle` | boundary | writer raises code 503, then valid | called | the puzzle, `attempts = 2` (AC19) |
 | eval `recorders` | error case | writer raises, then a puzzle; solver says 7 | two attempts | attempt 1 no reading, attempt 2 reading 7 (AC20) |
 | eval `main` | happy path | three requests, delay 5, fake models | run | `sleep` called `[5, 5]` (AC21) |
+| `api` | happy path | `Origin: http://localhost:8082` | `POST /puzzle` | `access-control-allow-origin` is that origin (AC22) |
+| `api` | error case | `Origin: http://example.com` | `POST /puzzle` | no `access-control-allow-origin` (AC23) |
 
 ## Spec Readiness checklist
 - [x] Every AC has a precise expected value — no "works correctly"
