@@ -70,7 +70,7 @@ what the evidence for each claim actually is.
 | `looppi.md` | The loop the exercise ran: steps, guardrails, task list |
 | `looppi-loki.md` | One row per round: task, tests, typecheck, browser, outcome |
 | `prompts2.md` | Every prompt that drove week 2, verbatim |
-| `docs/esitys.html` | The slides: one self-contained page with a playable round and the agent's checks animated. Open it in a browser |
+| `docs/esitys.html` | The slides: one self-contained page with a playable round and the agent's checks animated. [Open in a browser](https://raw.githack.com/uutela/next-path-vko2-ar-pakopeli/main/docs/esitys.html) |
 
 ## The exercise
 
