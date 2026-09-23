@@ -19,11 +19,11 @@ comes to look more finished than it is:
 |---|---|---|
 | The unit tests pass | `npm test` → **180 tests, 16 files** | just now |
 | The types hold | `npx tsc --noEmit` → exit 0 | just now |
-| The agent's tests pass with no network and no API key | `pytest` → **38 tests, 0.3 s**, one of which refuses socket connections for the whole path | just now |
+| The agent's tests pass with no network and no API key | `pytest` → **45 tests, 0.3 s**, one of which refuses socket connections for the whole path | just now |
 | The web game walks the whole pair route | `node scripts/browser-smoke.mjs http://localhost:8082 .smoke` → **20 checks, 0 console errors, 0 page errors** | previous round |
 | The puzzle point hands out a puzzle as text with no keypad, the answer point appears only once earned, and the code is typed there | named checks in the smoke run | previous round |
 | A stationary player is offered the answer point without moving | an `AppShell` test that delivers a position **once** and never moves the player | just now |
-| The agent produces a puzzle with the live model | three CLI draws plus four in the eval = **7 puzzles in memory**, each passing schema, solve-back and duplicate | during the eval |
+| The agent produces a puzzle with the live model | the 2026-09-23 eval: **19 of 20 accepted**, all 19 answers checked by hand; the refusal was network, not a puzzle | 2026-09-23 |
 
 One of these was also checked by hand: the first live puzzle was a
 coin-splitting problem answering 30. Sixteen taken, fourteen left, nine taken,
@@ -94,6 +94,12 @@ day, if not one of them needs a retry.
 
 ### 2.4 The eval measured the quota, not puzzle quality
 
+> **Superseded 2026-09-23.** Rerun with a new key and 15 s pacing: no 429,
+> 19/20 accepted, all 19 right by hand. The checks still never rejected
+> anything, and a draw averaged about 33 s against the game's 25 s. See
+> `agents/puzzle-agent/eval/eval-2026-09-23.md`. The section below is the
+> first run, kept as it was.
+
 20 requests, 59 model calls, 241 seconds:
 
 | | |
@@ -118,6 +124,8 @@ reached a verdict at most five times. The figure 16/20 measures an API quota,
 not model quality, and reading it as a quality metric would be wrong.
 
 ### 2.5 The eval harness has a known, unfixed pairing bug
+
+> **Fixed 2026-09-23** — `puzzle-agent.md` AC20.
 
 `agents/puzzle-agent/eval/run_eval.py` records writer calls and solver calls in
 two separate lists and pairs them by attempt number. When a writer attempt

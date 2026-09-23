@@ -31,6 +31,9 @@ src/data/points.local.json
 public/maplibre-gl-worker.mjs
 public/maplibre-gl-shared.mjs
 
+# Python bytecode, rebuilt on every run
+__pycache__/
+
 # Agent virtualenvs and the puzzles an agent has handed out
 agents/*/.venv/
 agents/*/memory/data/*

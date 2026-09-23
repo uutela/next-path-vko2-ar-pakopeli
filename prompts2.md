@@ -584,3 +584,29 @@ fail by swapping the order). 40 agent tests, 180 unit tests,
 
 → The root holds no key at all now, empty or otherwise. The agent's only
 source is its own `.env.local`.
+
+### 20 — what next
+> mikä on seuraava korjaus?
+
+> korjaa 2 ja 3 ja 4
+
+> onko jotain kesken?
+
+→ Three fixes, one decision taken rather than asked: a `429` now refuses at
+once instead of three times, because a per-minute quota resets later than the
+game's 25-second timeout, so waiting cannot help — other errors still retry
+(`puzzle-agent.md` AC18, AC19). The eval harness records each solver answer on
+the attempt the writer opened (AC20) and can pace its requests (AC21); both
+were red first against the old code for the right reason. `__pycache__/` is
+ignored and the ten committed `.pyc` files untracked.
+
+The rerun is the first eval that measured puzzles: no 429, 19 of 20 accepted,
+and all 19 answers checked by hand afterwards and right. It also found what
+nobody asked about — no check ever rejected anything, so the run proves nothing
+about the checks, and a draw averaged about 33 s against a 25 s game timeout,
+which would send most real draws to the local generator. Recorded, not fixed.
+45 agent tests, 180 unit tests, `npx tsc --noEmit` exit 0.
+
+> Tee
+
+→ Two commits: the key's place, then the three fixes.
