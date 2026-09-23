@@ -269,8 +269,9 @@ Left as they are on 2026-09-23, by decision rather than oversight:
   `test_api.py::test_a_refusal_is_a_200_with_a_reason` reloads the key from
   `agents/puzzle-agent/.env.local` and calls Gemini. Without a key — anyone
   cloning the repository — it passes as intended.
-- **The slides are not hosted.** `docs/esitys.html` opens from a clone; there
-  is no GitHub Pages link.
+- **The slides are not hosted by the repository.** There is no GitHub Pages;
+  the README links `docs/esitys.html` through raw.githack.com, a third-party
+  service that serves files from public repositories as they are.
 
 ---
 
