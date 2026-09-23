@@ -186,7 +186,9 @@ One line per thing noticed while working. Not implemented, not detoured into.
 - The kit's `agents/homework-coach-agent/memory/data/` is still not gitignored
   by name; the pattern added for `agents/*/memory/data/*` now covers it, but
   the example agent's own `.gitkeep` was committed before that rule existed.
-- **The 20-puzzle eval measured the API quota, not the puzzles.** The key's
+- ~~RESOLVED~~ **The 20-puzzle eval measured the API quota, not the puzzles.**
+  Rerun 2026-09-23 with a new key and 15 s pacing: no 429, 19/20 accepted,
+  all 19 answers right by hand — `eval/eval-2026-09-23.md`. The key's
   free tier ran out during request 6; requests 7 to 20 all failed with `429
   RESOURCE_EXHAUSTED` and never got a puzzle written. Five puzzle texts exist
   out of twenty requested. 59 model calls, 241 s. Four puzzles passed every
@@ -196,15 +198,17 @@ One line per thing noticed while working. Not implemented, not detoured into.
   how often the model writes an unusable puzzle. A rerun needs either a paid
   tier or a delay between requests; both are decisions for the person who asked
   for the measurement, so nothing was changed.
-- **The eval harness pairs solver calls to the wrong attempt.**
+- ~~RESOLVED~~ **The eval harness pairs solver calls to the wrong attempt.**
+  The solver now writes onto the attempt the writer opened — AC20.
   `eval/run_eval.py` records writer calls and solver calls in two lists and
   pairs them by attempt number; a failed writer attempt makes no solver call,
   so every later pairing in that request is off by one. Request 1 is labelled
   "solve-back — solver said None" on the attempt it was accepted on. The
   `Result:` lines come from the loop and are correct; the per-attempt verdict
   lines are not. Corrected in the eval file's header, left unfixed in the code.
-- **Three attempts against a rate-limited API is three refusals, not three
-  tries.** `MAX_ATTEMPTS` retries immediately, so a 429 becomes three 429s in a
+- ~~RESOLVED~~ **Three attempts against a rate-limited API is three refusals, not three
+  tries.** A 429 now refuses at once, with a reason starting `quota:`; other
+  errors still retry — `puzzle-agent.md` AC18, AC19. `MAX_ATTEMPTS` retries immediately, so a 429 becomes three 429s in a
   row and the player is told the agent gave up. Whether retries should back off,
   or whether a quota error should stop retrying at all, is a design decision —
   recorded, not taken.
@@ -234,3 +238,9 @@ One line per thing noticed while working. Not implemented, not detoured into.
   untrusted content straight into a prompt that runs beside loaded environment
   files and an outbound HTTPS client. Worth a deliberate decision rather than a
   copy-paste from the example.
+- ~~RESOLVED~~ **`__pycache__/*.pyc` under `agents/puzzle-agent` is tracked by git**; now ignored and untracked., so every test run dirties the tree; `.gitignore` has no `__pycache__/` line.
+- **A live draw averages about 33 s and the game waits 25 s.** From the
+  2026-09-23 eval (972 s wall, 285 s of pacing, 20 requests); per-request time
+  is not recorded, so the distribution is unknown. If it holds, most draws in
+  the game fall back to the local generator. Raising the timeout, a faster
+  model, or drawing ahead of time are the options — not chosen here.

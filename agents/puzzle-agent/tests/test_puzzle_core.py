@@ -176,6 +176,64 @@ def test_a_solver_that_raises_is_a_refusal_not_a_pass():
     assert result.puzzle is None
 
 
+class ModelError(Exception):
+    """Shaped like `google.genai.errors.APIError`: an HTTP code on `.code`."""
+
+    def __init__(self, code: int):
+        super().__init__(f"{code} from the model")
+        self.code = code
+
+
+class RaisingOnce:
+    """A writer that raises the given error on its first call, then succeeds."""
+
+    def __init__(self, error, payload):
+        self.error = error
+        self.payload = payload
+        self.calls = 0
+
+    def __call__(self, avoid=None):
+        self.calls += 1
+        if self.calls == 1:
+            raise self.error
+        return self.payload
+
+
+def test_a_quota_error_from_the_writer_ends_the_request_at_once():
+    """AC18: a 429 is one refusal, not three."""
+    writer = RaisingOnce(ModelError(429), puzzle())
+
+    result = generate_puzzle(writer, solver_returning(7), previous=[])
+
+    assert writer.calls == 1
+    assert not result.ok
+    assert result.reason.startswith("quota:")
+
+
+def test_a_quota_error_from_the_solver_ends_the_request_at_once():
+    """AC18: the solver's 429 is the same key's limit."""
+    writer = FakeWriter(puzzle())
+
+    def solver(text):
+        raise ModelError(429)
+
+    result = generate_puzzle(writer, solver, previous=[])
+
+    assert writer.calls == 1
+    assert not result.ok
+    assert result.reason.startswith("quota:")
+
+
+def test_any_other_model_error_is_still_retried():
+    """AC19: a 503 is a busy model, and the next attempt may get through."""
+    writer = RaisingOnce(ModelError(503), puzzle())
+
+    result = generate_puzzle(writer, solver_returning(7), previous=[])
+
+    assert result.ok
+    assert result.attempts == 2
+
+
 def test_ten_consecutive_puzzles_pass_every_check():
     """The goal of this build: ten in a row, schema, solve-back and duplicate."""
     # Ten genuinely different puzzles. An earlier version of this fixture

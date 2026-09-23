@@ -143,6 +143,37 @@ whatever those files held, on whichever machine it ran.
 **When** `load_agent_environment(agent_dir)` runs
 **Then** `os.environ["GEMINI_API_KEY"]` is `from-local`
 
+### AC18: A quota error ends the request at once
+**Given** a writer that raises an error whose `code` is `429`, and separately a writer that succeeds and a solver that raises such an error
+**When** a puzzle is generated
+**Then** the writer has been called once, the result is a refusal, and its reason starts with `quota:`
+
+A 429 answers "the key's request limit is used up". Retrying at once is three
+refusals instead of one, and waiting cannot help: a per-minute limit resets
+later than the game's 25-second timeout. Nothing else in the loop changes.
+
+### AC19: Any other model error is still retried
+**Given** a writer that raises an error whose `code` is `503` once, then returns a valid puzzle
+**When** a puzzle is generated
+**Then** the result is that puzzle with `attempts = 2`
+
+### AC20: The eval pairs each solver answer with the attempt it solved
+**Given** the eval's recorders around a writer that raises on its first call and returns a puzzle on its second, and a solver answering `7`
+**When** both attempts run
+**Then** attempt 1 holds the writer's error and no solver reading, and attempt 2 holds the puzzle and the reading `7`
+
+The harness kept writer calls and solver calls in two lists and paired them by
+index. A writer that failed made no solver call, so every later attempt in
+that request was paired with the wrong answer.
+
+### AC21: The eval can pace its requests
+**Given** three requests, a delay of `5` seconds and a recording `sleep`
+**When** the eval runs with fake models
+**Then** `sleep` was called exactly twice, with `5` each time — between requests, not before the first
+
+The 2026-09-16 run spent its quota by request 6. A delay keeps a run under a
+per-minute limit, so that what it measures is the puzzles.
+
 ## Files to Modify
 | File | Change |
 |---|---|
@@ -163,8 +194,15 @@ whatever those files held, on whichever machine it ran.
 | `agents/puzzle-agent/tests/test_agent_env.py` | New. AC16, AC17 |
 | `agents/puzzle-agent/tests/test_agent_offline.py` | Docstring no longer says a parent `.env.local` is loaded |
 | `README.md` | The key lives in `agents/puzzle-agent/.env.local`; agent test count |
-| `INBOX.md` | The walk-to-root note marked resolved |
+| `INBOX.md` | The walk-to-root, retry, eval-pairing and eval-quota notes marked resolved |
+| `agents/puzzle-agent/puzzle_core.py` | A model error with `code` 429 is a refusal at once (AC18) |
+| `agents/puzzle-agent/tests/test_puzzle_core.py` | AC18, AC19 |
+| `agents/puzzle-agent/eval/run_eval.py` | Attempts recorded as one list; `main` takes its models, store, output and `sleep`; `--delay` (AC20, AC21) |
+| `agents/puzzle-agent/tests/test_eval.py` | New. AC20, AC21 |
+| `agents/puzzle-agent/eval/eval-2026-09-23.md` | New. The rerun against the live model |
+| `.gitignore` | `__pycache__/`, and the committed bytecode untracked |
 | `turvallisuus.md` | The env loader's scope, as it is now |
+| `kesken.md` | Test count, live-model row, and 2.4 / 2.5 marked superseded and fixed |
 
 ## Risk
 - **The criteria are proven against fakes; the live model is proven three
@@ -191,6 +229,13 @@ whatever those files held, on whichever machine it ran.
   refuses with `no Gemini API key` until the key is in
   `agents/puzzle-agent/.env.local` or exported in the shell. Visible, not
   silent — AC8 is what the player sees.
+- **A 429 that is not a quota error.** Gemini answers 429 only for
+  `RESOURCE_EXHAUSTED`; if another cause ever used it, the request would be
+  refused on one attempt instead of three. The player sees the local puzzle
+  either way (AC13).
+- **Live, 2026-09-23:** 19 of 20 accepted, all 19 answers right by hand, no
+  attempt rejected by any check and no 429 — so AC18 is proven offline only.
+  A draw averaged about 33 s against a 25 s game timeout (`INBOX.md`).
 - **Rollback:** point `App.tsx` back at `createLocalPuzzleSource(Math.random)`.
   The agent is a separate process and a separate folder; nothing in `domain/`
   knows it exists.
@@ -223,6 +268,11 @@ whatever those files held, on whichever machine it ran.
 | `api` | error case | no key | `POST /puzzle` | `200` with `ok: false` and a reason |
 | `load_agent_environment` | property | key only in a parent `.env.local` | called on the child | variable absent (AC16) |
 | `load_agent_environment` | happy path | `.env` and `.env.local` in the agent folder | called | `.env.local` wins (AC17) |
+| `generate_puzzle` | error case | writer raises code 429 | called | refusal starting `quota:`, one writer call (AC18) |
+| `generate_puzzle` | error case | solver raises code 429 | called | refusal starting `quota:`, one writer call (AC18) |
+| `generate_puzzle` | boundary | writer raises code 503, then valid | called | the puzzle, `attempts = 2` (AC19) |
+| eval `recorders` | error case | writer raises, then a puzzle; solver says 7 | two attempts | attempt 1 no reading, attempt 2 reading 7 (AC20) |
+| eval `main` | happy path | three requests, delay 5, fake models | run | `sleep` called `[5, 5]` (AC21) |
 
 ## Spec Readiness checklist
 - [x] Every AC has a precise expected value — no "works correctly"

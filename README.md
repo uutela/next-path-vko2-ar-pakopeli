@@ -49,8 +49,10 @@ is not seen.
 
 ## What is verified, and what is not
 
-Verified: 180 unit tests, 40 agent tests offline, 20 browser checks with no
-console or page errors, and seven real puzzles drawn against a live model.
+Verified: 180 unit tests, 45 agent tests offline, 20 browser checks with no
+console or page errors, and a 20-request eval against a live model in which 19
+puzzles were accepted and all 19 answers checked right by hand
+(`agents/puzzle-agent/eval/eval-2026-09-23.md`).
 
 **Not verified: the AR half has never run on a device, and the agent's puzzles
 have never been seen in the game.** `kesken.md` says exactly what, why, and

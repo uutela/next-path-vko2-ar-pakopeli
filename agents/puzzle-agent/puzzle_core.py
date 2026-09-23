@@ -29,6 +29,11 @@ MAX_ANSWER = 999_999
 #: different things do not — see the criteria in tests/test_puzzle_core.py.
 DUPLICATE_THRESHOLD = 0.6
 
+#: The HTTP status for "this key's request limit is used up". Duck-typed on
+#: `.code`, as `google.genai.errors.APIError` carries it, so that nothing here
+#: imports the model's library.
+QUOTA_EXHAUSTED = 429
+
 _WORD = re.compile(r"[^\W_]+", re.UNICODE)
 
 
@@ -107,6 +112,15 @@ def _solve_back(solver: Callable[[str], Any], text: str, answer: int) -> Check:
     return Check(True)
 
 
+def _is_quota_error(error: Exception) -> bool:
+    return getattr(error, "code", None) == QUOTA_EXHAUSTED
+
+
+def _quota_refusal(error: Exception, attempt: int) -> Result:
+    """Retrying a spent quota at once is more refusals, not more tries."""
+    return Result(False, reason=f"quota: request limit reached, not retried — {error}", attempts=attempt)
+
+
 def generate_puzzle(
     writer: Callable[..., Any],
     solver: Callable[[str], Any],
@@ -125,6 +139,8 @@ def generate_puzzle(
         try:
             payload = writer(avoid=list(previous))
         except Exception as error:  # noqa: BLE001 - any model failure is a refusal
+            if _is_quota_error(error):
+                return _quota_refusal(error, attempt)
             reason = f"writer failed: {error}"
             continue
 
@@ -143,6 +159,8 @@ def generate_puzzle(
         try:
             solved = _solve_back(solver, text, answer)
         except Exception as error:  # noqa: BLE001
+            if _is_quota_error(error):
+                return _quota_refusal(error, attempt)
             reason = f"solve-back failed: {error}"
             continue
 

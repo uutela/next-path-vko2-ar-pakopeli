@@ -11,12 +11,13 @@ their verdict again is reading the same verdict, not a second opinion.
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 AGENT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(AGENT_DIR))
@@ -27,10 +28,7 @@ from puzzle_core import check_schema, is_duplicate, similarity  # noqa: E402
 from subagents.puzzle_solver import solve as real_solver  # noqa: E402
 from subagents.puzzle_writer import write_puzzle as real_writer  # noqa: E402
 
-RUNS = int(sys.argv[1]) if len(sys.argv) > 1 else 20
-OUT = Path(__file__).resolve().parent / f"eval-{datetime.now().strftime('%Y-%m-%d')}.md"
-
-calls = {"writer": 0, "solver": 0}
+EVAL_DIR = Path(__file__).resolve().parent
 
 
 def verdict_for(payload: Any, previous: List[str], solved: Any) -> str:
@@ -51,66 +49,100 @@ def verdict_for(payload: Any, previous: List[str], solved: Any) -> str:
     return "accepted"
 
 
-def append(block: str) -> None:
-    with open(OUT, "a", encoding="utf-8") as handle:
-        handle.write(block)
+def recorders(
+    write: Callable[..., Any], solve: Callable[[str], Any]
+) -> Tuple[Callable[..., Any], Callable[[str], Any], Callable[[], List[Dict[str, Any]]]]:
+    """A writer and a solver that record what they did, and the attempts so far.
+
+    Each attempt is `{"payload": ...}`, plus `"solved"` when the solver ran.
+    The solver writes onto the attempt the writer opened. Two lists paired by
+    index went wrong the first time a writer failed: it makes no solver call,
+    and every later answer landed on the attempt before its own.
+    """
+    recorded: List[Dict[str, Any]] = []
+
+    def writer(avoid=None):
+        attempt: Dict[str, Any] = {}
+        recorded.append(attempt)
+        try:
+            attempt["payload"] = write(avoid=avoid)
+        except Exception as error:  # noqa: BLE001
+            attempt["payload"] = error
+            raise
+        return attempt["payload"]
+
+    def solver(text):
+        attempt = recorded[-1]
+        try:
+            attempt["solved"] = solve(text)
+        except Exception as error:  # noqa: BLE001
+            attempt["solved"] = error
+            raise
+        return attempt["solved"]
+
+    return writer, solver, lambda: list(recorded)
 
 
-def main() -> int:
-    store = MemoryStore()
+def main(
+    argv: Optional[List[str]] = None,
+    write: Callable[..., Any] = real_writer,
+    solve: Callable[[str], Any] = real_solver,
+    store: Optional[MemoryStore] = None,
+    out: Optional[Path] = None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> int:
+    parser = argparse.ArgumentParser(description="Draw puzzles against the live model and report each attempt.")
+    parser.add_argument("runs", nargs="?", type=int, default=20, help="puzzles to request")
+    parser.add_argument("--delay", type=float, default=0.0, help="seconds to wait between requests")
+    args = parser.parse_args(argv)
+
+    store = store if store is not None else MemoryStore()
+    out = out if out is not None else EVAL_DIR / f"eval-{datetime.now().strftime('%Y-%m-%d')}.md"
+    runs = args.runs
+    calls = {"writer": 0, "solver": 0}
+
+    def append(block: str) -> None:
+        with open(out, "a", encoding="utf-8") as handle:
+            handle.write(block)
+
     started = time.time()
     before = len(store.list_puzzles())
 
     append(
         f"# Puzzle agent eval — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n\n"
-        f"{RUNS} puzzles drawn in a row against the live model, through the same\n"
+        f"{runs} puzzles drawn in a row against the live model, through the same\n"
         f"`draw()` the game calls: real writer, real solver, real memory.\n\n"
-        f"Memory held {before} puzzles before this run.\n\n"
+        f"Memory held {before} puzzles before this run. "
+        f"Requests were paced {args.delay:g} s apart.\n\n"
         f"Measurement only. Nothing was tuned from what it found.\n\n---\n\n"
     )
 
     outcomes: List[Dict[str, Any]] = []
 
-    for index in range(1, RUNS + 1):
+    for index in range(1, runs + 1):
+        if index > 1 and args.delay > 0:
+            sleep(args.delay)
         previous = list(store.texts())
-        drawn: List[Any] = []
-        solved: List[Any] = []
-
-        def writer(avoid=None):
-            calls["writer"] += 1
-            try:
-                payload = real_writer(avoid=avoid)
-            except Exception as error:  # noqa: BLE001
-                drawn.append(error)
-                raise
-            drawn.append(payload)
-            return payload
-
-        def solver(text):
-            calls["solver"] += 1
-            try:
-                answer = real_solver(text)
-            except Exception as error:  # noqa: BLE001
-                solved.append(error)
-                raise
-            solved.append(answer)
-            return answer
+        writer, solver, attempts = recorders(write, solve)
 
         result = draw(writer=writer, solver=solver, store=store)
+        recorded = attempts()
+        calls["writer"] += len(recorded)
+        calls["solver"] += sum(1 for attempt in recorded if "solved" in attempt)
 
         lines = [f"## {index}\n"]
-        for attempt, payload in enumerate(drawn, start=1):
-            answer_of = solved[attempt - 1] if attempt - 1 < len(solved) else None
-            reason = verdict_for(payload, previous, answer_of)
+        for number, attempt in enumerate(recorded, start=1):
+            payload = attempt["payload"]
+            reason = verdict_for(payload, previous, attempt.get("solved"))
             if isinstance(payload, Exception):
-                lines.append(f"**Attempt {attempt}** — {reason}\n")
+                lines.append(f"**Attempt {number}** — {reason}\n")
                 continue
             text = str(payload.get("text", "")).strip()
-            lines.append(f"**Attempt {attempt}** — {reason}\n")
+            lines.append(f"**Attempt {number}** — {reason}\n")
             lines.append(f"\n> {text if text else '(empty text)'}\n")
             lines.append(f"\n- writer's answer: `{payload.get('answer')!r}`\n")
-            if attempt - 1 < len(solved):
-                lines.append(f"- solver read: `{solved[attempt - 1]!r}`\n")
+            if "solved" in attempt:
+                lines.append(f"- solver read: `{attempt['solved']!r}`\n")
             lines.append("\n")
 
         if result.get("ok"):
@@ -121,7 +153,7 @@ def main() -> int:
             outcomes.append({"ok": False, "reason": result["reason"]})
 
         append("".join(lines))
-        print(f"{index}/{RUNS} {'ok' if result.get('ok') else 'REFUSED'}", flush=True)
+        print(f"{index}/{runs} {'ok' if result.get('ok') else 'REFUSED'}", flush=True)
 
     first_try = sum(1 for o in outcomes if o["ok"] and o["attempts"] == 1)
     retried = sum(1 for o in outcomes if o["ok"] and o["attempts"] > 1)
@@ -130,10 +162,10 @@ def main() -> int:
     append(
         "## Summary\n\n"
         f"| | |\n|---|---|\n"
-        f"| Puzzles requested | {RUNS} |\n"
+        f"| Puzzles requested | {runs} |\n"
         f"| Accepted on the first attempt | {first_try} |\n"
         f"| Accepted after a retry | {retried} |\n"
-        f"| Refused after three attempts | {refused} |\n"
+        f"| Refused | {refused} |\n"
         f"| Model calls — writer | {calls['writer']} |\n"
         f"| Model calls — solver | {calls['solver']} |\n"
         f"| Model calls — total | {calls['writer'] + calls['solver']} |\n"
