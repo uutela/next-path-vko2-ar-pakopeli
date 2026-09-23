@@ -19,7 +19,7 @@ comes to look more finished than it is:
 |---|---|---|
 | The unit tests pass | `npm test` → **180 tests, 16 files** | just now |
 | The types hold | `npx tsc --noEmit` → exit 0 | just now |
-| The agent's tests pass with no network and no API key | `pytest` → **45 tests, 0.3 s**, one of which refuses socket connections for the whole path | just now |
+| The agent's tests pass with no network and no API key | `pytest` → **47 tests, 0.3 s**, one of which refuses socket connections for the whole path | just now |
 | The web game walks the whole pair route | `node scripts/browser-smoke.mjs http://localhost:8082 .smoke` → **20 checks, 0 console errors, 0 page errors** | previous round |
 | The puzzle point hands out a puzzle as text with no keypad, the answer point appears only once earned, and the code is typed there | named checks in the smoke run | previous round |
 | A stationary player is offered the answer point without moving | an `AppShell` test that delivers a position **once** and never moves the player | just now |
@@ -59,6 +59,12 @@ run in the iOS simulator on Apple Silicon**, because Viro's plugin sets
 physical device.
 
 ### 2.2 The agent's puzzles have never been seen in the game
+
+> **Found 2026-09-23:** the web build could never have shown one. The agent
+> sent no CORS headers, so the browser discarded every answer and the game fell
+> back. Fixed (`puzzle-agent.md` AC22, AC23) and a real browser page on :8082
+> has now read a live puzzle. The chain through the game's screens is still
+> unwalked, and a draw can outlast the 25 s timeout.
 
 **Actual state:** the agent has been shown to work **on its own, from the
 command line**, and through its API tests. It has never once been seen through
@@ -253,6 +259,18 @@ Thirteen open entries. The ones that affect how the game behaves:
   before the state updates both call the source.
 - **The kit's own files still default to `gemini-2.5-flash`**, which does not
   exist for this key. They belong to the kit's author and were left unmodified.
+
+Left as they are on 2026-09-23, by decision rather than oversight:
+
+- **A live draw takes longer than the game waits.** 33 s on average in the
+  eval and 46 s for one draw from the browser, against a 25 s timeout. Past
+  it the game shows the local arithmetic puzzle instead of the agent's.
+- **One API test goes online for whoever has a key.** Run alone,
+  `test_api.py::test_a_refusal_is_a_200_with_a_reason` reloads the key from
+  `agents/puzzle-agent/.env.local` and calls Gemini. Without a key — anyone
+  cloning the repository — it passes as intended.
+- **The slides are not hosted.** `docs/esitys.html` opens from a clone; there
+  is no GitHub Pages link.
 
 ---
 

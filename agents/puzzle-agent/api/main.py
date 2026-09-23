@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 AGENT_DIR = Path(__file__).resolve().parent.parent
@@ -18,7 +19,14 @@ sys.path.insert(0, str(AGENT_DIR))
 
 from puzzle_agent import draw  # noqa: E402
 
+#: The web build's dev server (README: port 8082). Only the browser enforces
+#: CORS, so this matters for the web build alone — the native app is not
+#: subject to it. Without it every draw in the browser fell back to the local
+#: generator. See specs/features/puzzle-agent.md AC22, AC23.
+ALLOWED_ORIGINS = ["http://localhost:8082", "http://127.0.0.1:8082"]
+
 app = FastAPI(title="puzzle-agent", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_methods=["GET", "POST"])
 
 
 class Puzzle(BaseModel):
