@@ -49,7 +49,7 @@ is not seen.
 
 ## What is verified, and what is not
 
-Verified: 180 unit tests, 45 agent tests offline, 20 browser checks with no
+Verified: 180 unit tests, 47 agent tests offline, 20 browser checks with no
 console or page errors, and a 20-request eval against a live model in which 19
 puzzles were accepted and all 19 answers checked right by hand
 (`agents/puzzle-agent/eval/eval-2026-09-23.md`).
@@ -70,6 +70,7 @@ what the evidence for each claim actually is.
 | `looppi.md` | The loop the exercise ran: steps, guardrails, task list |
 | `looppi-loki.md` | One row per round: task, tests, typecheck, browser, outcome |
 | `prompts2.md` | Every prompt that drove week 2, verbatim |
+| `docs/esitys.html` | The slides: one self-contained page with a playable round and the agent's checks animated. Open it in a browser |
 
 ## The exercise
 

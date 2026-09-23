@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AR Pakopeli — viikko 2</title>
+<meta name="description" content="Esitys: sijaintiin perustuva AR-pakopeli ja tekoälyagentti, joka kirjoittaa sen pulmat. Next-path-kurssin viikko 2.">
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --surface-2: #efece4;
+    --ink: #1d1b18;
+    --ink-2: #5b5750;
+    --line: #d9d4c8;
+    --accent: #2f6f5e;
+    --accent-ink: #ffffff;
+    --accent-soft: #d8ebe4;
+    --warn: #b5462f;
+    --warn-soft: #f6dcd4;
+    --gold: #b88a1b;
+    --gold-soft: #f5e8c6;
+    --map: #e6efe3;
+    --map-line: #cbdbc6;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151714;
+      --surface: #1e211d;
+      --surface-2: #262a25;
+      --ink: #ecebe6;
+      --ink-2: #a9a79f;
+      --line: #353a33;
+      --accent: #6cc3a6;
+      --accent-ink: #0f1a16;
+      --accent-soft: #1f3a31;
+      --warn: #f08a70;
+      --warn-soft: #3d2520;
+      --gold: #e6be5a;
+      --gold-soft: #3a3120;
+      --map: #1c2a20;
+      --map-line: #28392c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151714;
+    --surface: #1e211d;
+    --surface-2: #262a25;
+    --ink: #ecebe6;
+    --ink-2: #a9a79f;
+    --line: #353a33;
+    --accent: #6cc3a6;
+    --accent-ink: #0f1a16;
+    --accent-soft: #1f3a31;
+    --warn: #f08a70;
+    --warn-soft: #3d2520;
+    --gold: #e6be5a;
+    --gold-soft: #3a3120;
+    --map: #1c2a20;
+    --map-line: #28392c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9em; }
+
+  .deck { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  .stage { flex: 1; position: relative; overflow: hidden; }
+  .slide {
+    position: absolute; inset: 0;
+    padding: clamp(20px, 5vw, 64px) clamp(16px, 6vw, 88px) 24px;
+    overflow-y: auto;
+    opacity: 0; visibility: hidden;
+    transform: translateX(24px);
+    transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
+  }
+  .slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .35s ease, transform .35s ease; }
+  .slide.past { transform: translateX(-24px); }
+  .inner { max-width: 1120px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; justify-content: center; }
+
+  .kicker { color: var(--accent); font-weight: 650; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; margin: 0 0 10px; }
+  h1 { font-size: clamp(36px, 6vw, 68px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -.02em; }
+  h2 { font-size: clamp(26px, 3.6vw, 42px); line-height: 1.1; margin: 0 0 22px; letter-spacing: -.015em; }
+  h3 { font-size: 18px; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .lead { font-size: clamp(18px, 2vw, 22px); color: var(--ink-2); max-width: 760px; }
+  .muted { color: var(--ink-2); }
+  .small { font-size: 14px; }
+
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  @media (max-width: 760px) { .g2, .g3, .g4 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow); }
+  .card p:last-child { margin-bottom: 0; }
+  .card.accent { border-color: var(--accent); }
+  .card.warn { border-color: var(--warn); }
+
+  .stat { font-size: clamp(34px, 4.6vw, 52px); font-weight: 750; letter-spacing: -.02em; line-height: 1; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+  .stat.good { color: var(--accent); }
+  .stat.bad { color: var(--warn); }
+
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--surface-2); color: var(--ink-2); }
+  .pill.ok { background: var(--accent-soft); color: var(--accent); }
+  .pill.no { background: var(--warn-soft); color: var(--warn); }
+  .pill.gold { background: var(--gold-soft); color: var(--gold); }
+
+  ul.clean { list-style: none; padding: 0; margin: 0; }
+  ul.clean li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  ul.clean li:last-child { border-bottom: 0; }
+
+  button { font: inherit; cursor: pointer; }
+  .btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px; padding: 9px 16px; font-weight: 600; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn:focus-visible, .key:focus-visible, .navbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* bottom bar */
+  .bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--surface); }
+  .navbtn { background: transparent; border: 1px solid var(--line); color: var(--ink); border-radius: 8px; width: 38px; height: 34px; }
+  .progress { flex: 1; height: 4px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s ease; }
+  .counter { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 14px; min-width: 52px; text-align: right; }
+  .hint { color: var(--ink-2); font-size: 13px; }
+  @media (max-width: 560px) { .hint { display: none; } }
+
+  /* flow diagram */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+  .flow .step { flex: 1 1 150px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; position: relative; transition: border-color .25s, background .25s; }
+  .flow .step .n { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  .flow .step.on { border-color: var(--accent); background: var(--accent-soft); }
+  .flow .step.fail { border-color: var(--warn); background: var(--warn-soft); }
+  .flow .step.model::after { content: "malli"; position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 700; color: var(--gold); }
+  .flow .step.code::after { content: "Python"; position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 700; color: var(--accent); }
+
+  /* game demo */
+  .demo { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .demo { grid-template-columns: 1fr; } }
+  .mapbox { background: var(--map); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; position: relative; touch-action: manipulation; }
+  .mapbox svg { display: block; width: 100%; height: auto; cursor: crosshair; }
+  .phone { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 16px; box-shadow: var(--shadow); min-height: 330px; display: flex; flex-direction: column; }
+  .phone .status { font-size: 12px; color: var(--ink-2); display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .phone .screen { flex: 1; display: flex; flex-direction: column; }
+  .puzzle-text { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; font-size: 15px; margin-bottom: 12px; }
+  .display { font-family: ui-monospace, Menlo, monospace; font-size: 26px; letter-spacing: .25em; text-align: center; padding: 8px; border-radius: 10px; background: var(--surface-2); margin-bottom: 10px; min-height: 48px; }
+  .display.shake { animation: shake .35s; color: var(--warn); }
+  @keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .key { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 0; font-size: 18px; font-weight: 600; }
+  .key.ok { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .solved { text-align: center; margin: auto 0; }
+  .solved .big { font-size: 44px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+  .log { margin-top: 10px; font-size: 13px; color: var(--ink-2); min-height: 20px; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+
+  /* agent demo */
+  .draft { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; min-height: 64px; font-size: 15px; margin: 14px 0 10px; }
+  .verdict { font-weight: 650; min-height: 24px; }
+  .verdict.ok { color: var(--accent); }
+  .verdict.no { color: var(--warn); }
+
+  /* bars */
+  .bars { display: grid; gap: 12px; }
+  .barrow { display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: center; }
+  .stack { display: flex; height: 30px; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+  .stack span { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; }
+  .s-ok { background: var(--accent); }
+  .s-retry { background: var(--gold); }
+  .s-quota { background: var(--warn); }
+  .s-net { background: #8a8578; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  table.t { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.t td, table.t th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.t th { color: var(--ink-2); font-weight: 600; font-size: 13px; }
+
+  .theme-toggle { margin-left: 4px; }
+  @media (prefers-reduced-motion: reduce) { .slide, .progress i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <div class="stage" id="stage">
+
+    <!-- 1 -->
+    <section class="slide" aria-label="Kansi">
+      <div class="inner">
+        <p class="kicker">next-path · viikko 2 · syksy 2026</p>
+        <h1>AR Pakopeli</h1>
+        <p class="lead">Sijaintiin perustuva pakopeli: kävele pisteelle, lue pulma, kävele toiselle pisteelle ja syötä koodi. Viikolla 2 pulmat alkoi kirjoittaa tekoälyagentti, ja koodi päättää, kelpaako pulma.</p>
+        <div class="grid g4" style="margin-top:28px">
+          <div class="card"><div class="stat">180</div><div class="muted small">yksikkötestiä</div></div>
+          <div class="card"><div class="stat">45</div><div class="muted small">agentin testiä, offline</div></div>
+          <div class="card"><div class="stat good">19/20</div><div class="muted small">oikean mallin pulmaa hyväksytty</div></div>
+          <div class="card"><div class="stat">0</div><div class="muted small">sijaintitietoa laitteen ulkopuolelle</div></div>
+        </div>
+        <p class="muted small" style="margin-top:22px">Siirry nuolinäppäimillä, välilyönnillä tai pyyhkäisemällä.</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" aria-label="Mikä peli on">
+      <div class="inner">
+        <p class="kicker">Peli</p>
+        <h2>Kävely pisteiden välillä on itse peli</h2>
+        <div class="grid g3">
+          <div class="card">
+            <span class="pill gold">1 · Pulmapiste</span>
+            <h3 style="margin-top:10px">Pulma luetaan yhdessä paikassa</h3>
+            <p class="muted">Kun olet pisteen säteen sisällä, puhelin näyttää pulman tekstinä. Näppäimistöä ei vielä ole.</p>
+          </div>
+          <div class="card">
+            <span class="pill">2 · Kävely</span>
+            <h3 style="margin-top:10px">Vastauspiste ilmestyy kartalle</h3>
+            <p class="muted">Vastauspiste tulee näkyviin vasta, kun pulma on kerätty. Pulma kulkee mukana päässä.</p>
+          </div>
+          <div class="card">
+            <span class="pill ok">3 · Vastauspiste</span>
+            <h3 style="margin-top:10px">Koodi syötetään toisessa paikassa</h3>
+            <p class="muted">Puhelimessa näkyy maailmaan ankkuroitu AR-paneeli ja selaimessa tavallinen näkymä. Oikea koodi soittaa fanfaarin.</p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <p style="margin:0"><strong>Rakenne:</strong> GPS, kamera ja pistevarasto ovat kukin oman adapterinsa takana. Pelin tilakone (<code>MAP → NEAR → PUZZLE → ANSWER → SOLVED</code>) on puhdas funktio, eikä se koske suoraan mihinkään lähteeseen.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3: game demo -->
+    <section class="slide" aria-label="Demo: pelikierros">
+      <div class="inner">
+        <p class="kicker">Demo</p>
+        <h2>Pelaa yksi kierros</h2>
+        <div class="demo">
+          <div>
+            <div class="mapbox" id="map">
+              <svg id="mapsvg" viewBox="0 0 400 260" role="img" aria-label="Kartta: pelaaja, pulmapiste ja vastauspiste">
+                <defs>
+                  <pattern id="gridp" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M20 0H0V20" fill="none" stroke="var(--map-line)" stroke-width="1"/>
+                  </pattern>
+                </defs>
+                <rect width="400" height="260" fill="url(#gridp)"/>
+                <path d="M0 190 C 90 170, 150 210, 230 160 S 360 90, 400 100" fill="none" stroke="var(--map-line)" stroke-width="10" stroke-linecap="round"/>
+                <g id="pPuzzle">
+                  <circle id="rPuzzle" r="40" fill="var(--gold)" fill-opacity=".14" stroke="var(--gold)" stroke-dasharray="4 4"/>
+                  <circle r="9" fill="var(--gold)"/>
+                  <text y="-50" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Pulmapiste</text>
+                </g>
+                <g id="pAnswer" style="opacity:0">
+                  <circle id="rAnswer" r="40" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-dasharray="4 4"/>
+                  <circle r="9" fill="var(--accent)"/>
+                  <text y="-50" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Vastauspiste</text>
+                </g>
+                <g id="player">
+                  <circle r="14" fill="#3b7bd8" fill-opacity=".18"/>
+                  <circle r="7" fill="#3b7bd8" stroke="#fff" stroke-width="2.5"/>
+                </g>
+              </svg>
+            </div>
+            <div class="controls">
+              <span class="muted small">Kävele: napauta karttaa tai käytä näppäimiä W A S D</span>
+            </div>
+            <div class="controls">
+              <label class="toggle"><input type="checkbox" id="agentOn" checked> Pulma-agentti päällä</label>
+              <button class="btn ghost" id="resetGame" type="button">Aloita alusta</button>
+            </div>
+          </div>
+          <div class="phone" aria-live="polite">
+            <div class="status"><span id="gpsLabel">GPS · —</span><span id="stateLabel" class="mono">MAP</span></div>
+            <div class="screen" id="screen"></div>
+            <div class="log" id="gameLog"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4: agent -->
+    <section class="slide" aria-label="Pulma-agentti">
+      <div class="inner">
+        <p class="kicker">Viikko 2 · pulma-agentti</p>
+        <h2>Malli kirjoittaa ja ratkaisee, Python päättää</h2>
+        <div class="flow" id="flow">
+          <div class="step model" data-step="write"><div class="n">1</div><h3>Kirjoittaja</h3><p class="muted small">Gemini kirjoittaa yhden suomenkielisen pulman JSONina.</p></div>
+          <div class="step code" data-step="schema"><div class="n">2</div><h3>Rakenne</h3><p class="muted small">Onko tekstiä, ja onko vastaus kokonaisluku, jossa on 1–6 numeroa?</p></div>
+          <div class="step code" data-step="dup"><div class="n">3</div><h3>Duplikaatti</h3><p class="muted small">Onko pulma liian lähellä muistissa olevaa pulmaa?</p></div>
+          <div class="step model" data-step="solve"><div class="n">4</div><h3>Ratkaisija</h3><p class="muted small">Toinen kutsu saa pelkän tekstin ilman vastausta.</p></div>
+          <div class="step code" data-step="compare"><div class="n">5</div><h3>Vertailu</h3><p class="muted small">Tuliko ratkaisija samaan lukuun kuin kirjoittaja?</p></div>
+        </div>
+        <div class="grid g2" style="margin-top:14px; align-items:start">
+          <div class="card">
+            <div class="controls" style="margin-top:0">
+              <button class="btn" id="drawBtn" type="button">Arvo pulma</button>
+              <span class="muted small" id="scenarioLabel"></span>
+            </div>
+            <div class="draft" id="draft"><span class="muted">Luonnos ilmestyy tähän.</span></div>
+            <div class="verdict" id="verdict"></div>
+          </div>
+          <div class="card">
+            <h3>Säännöt, jotka eivät ole mallin päätettävissä</h3>
+            <ul class="clean small">
+              <li>Kolme yritystä, sitten hylkäys syineen. Agentti ei koskaan keksi pulmaa aukon täytteeksi.</li>
+              <li><strong>Uutta tänään:</strong> 429 eli kiintiö täynnä hylkää heti, koska minuuttikiintiö ei ehdi nollautua pelin 25 sekunnin aikana.</li>
+              <li>Jos agentti hylkää tai ei vastaa, peli ottaa paikallisen pulman ja kertoo sen. Pelaaja ei jää jumiin pisteelle.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5: eval -->
+    <section class="slide" aria-label="Mittaus oikeaa mallia vasten">
+      <div class="inner">
+        <p class="kicker">Mittaus · 20 pyyntöä oikeaa mallia vasten</p>
+        <h2>Ensimmäinen ajo mittasi kiintiötä, toinen pulmia</h2>
+        <div class="card">
+          <div class="bars">
+            <div class="barrow">
+              <div><strong>16.9.</strong><div class="muted small">ei tahditusta</div></div>
+              <div class="stack" aria-label="16.9.: 2 ensimmäisellä, 2 uudelleenyrityksellä, 1 verkko, 15 kiintiö">
+                <span class="s-ok" style="width:10%">2</span>
+                <span class="s-retry" style="width:10%">2</span>
+                <span class="s-net" style="width:5%">1</span>
+                <span class="s-quota" style="width:75%">15 × 429</span>
+              </div>
+            </div>
+            <div class="barrow">
+              <div><strong>23.9.</strong><div class="muted small">15 s välein</div></div>
+              <div class="stack" aria-label="23.9.: 18 ensimmäisellä, 1 uudelleenyrityksellä, 1 verkko">
+                <span class="s-ok" style="width:90%">18 ensimmäisellä</span>
+                <span class="s-retry" style="width:5%">1</span>
+                <span class="s-net" style="width:5%">1</span>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <span><i class="s-ok"></i>hyväksytty ensimmäisellä</span>
+            <span><i class="s-retry"></i>hyväksytty uudelleenyrityksellä</span>
+            <span><i class="s-net"></i>hylätty: verkko tai aikakatkaisu</span>
+            <span><i class="s-quota"></i>hylätty: kiintiö</span>
+          </div>
+        </div>
+        <div class="grid g3" style="margin-top:16px">
+          <div class="card accent"><div class="stat good">19/19</div><p class="muted small">hyväksyttyä vastausta tarkistettu jälkikäteen käsin: kaikki oikein. Ratkaisijan samanmielisyys on saman mallin kaksi kutsua. Käsin tarkistus on ainoa todiste oikeellisuudesta.</p></div>
+          <div class="card"><div class="stat">0</div><p class="muted small">yritystä hylätty rakenteen, duplikaatin tai ratkaisijan takia. Tämä on hyvä uutinen mallista, mutta ei kerro mitään tarkistuksista: ne on todistettu vain offline-testeillä.</p></div>
+          <div class="card warn"><div class="stat bad">~33 s</div><p class="muted small">yksi pulma kesti keskimäärin näin kauan, mutta peli odottaa 25 s. Pelissä useimmat arvonnat päätyisivät paikalliseen pulmaan. Kirjattu INBOXiin, ei korjattu.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5b: examples -->
+    <section class="slide" aria-label="Esimerkkipulmat">
+      <div class="inner">
+        <p class="kicker">Esimerkit · agentin kirjoittamia 23.9.</p>
+        <h2>Mitä malli oikeasti kirjoitti ja miten sen tarkistin</h2>
+        <div class="grid g2">
+          <div class="card">
+            <span class="pill">joukko-oppi</span>
+            <p style="margin-top:10px">Seikkailijakillan salissa istuu 40 soturia. Heistä 25:llä on miekka ja 18:lla kilpi. Tasan 8 soturilla ei ole kumpaakaan. Kuinka monella on sekä miekka että kilpi?</p>
+            <p class="muted small mono">40 − 8 = 32 · 25 + 18 − 32 = <strong>11</strong> <span class="pill ok">kirjoittaja 11 · ratkaisija 11</span></p>
+          </div>
+          <div class="card">
+            <span class="pill">takaperin laskeminen</span>
+            <p style="margin-top:10px">Sussu söi 4 makeista, antoi kolmasosan jäljellä olevista ystävälleen, pudotti 2 lätäkköön ja jakoi loput kolmelle, jolloin kukin sai 6. Montako makeista pussissa oli alun perin?</p>
+            <p class="muted small mono">18 → +2 = 20 → ÷ ⅔ = 30 → +4 = <strong>34</strong> <span class="pill ok">34 · 34</span></p>
+          </div>
+          <div class="card">
+            <span class="pill">päättely</span>
+            <p style="margin-top:10px">Koodin kolme numeroa ovat peräkkäisiä, ja niiden tulo on 120. Ensimmäinen numero on suurempi kuin viimeinen, ja keskimmäinen on pienin. Mikä on koodi?</p>
+            <p class="muted small mono">4·5·6 = 120 · keskellä 4 · 6 &gt; 5 → <strong>645</strong> <span class="pill ok">645 · 645</span></p>
+          </div>
+          <div class="card">
+            <span class="pill">ansa</span>
+            <p style="margin-top:10px">Päiväkirjan sivunumeroissa numero 3 esiintyy täsmälleen 15 kertaa. Mikä on suurin mahdollinen sivumäärä?</p>
+            <p class="muted small mono">3, 13, 23 = 3 · 30–39 = 11 → 14 · 43 = 15 · seuraava 3 on sivulla 53 → <strong>52</strong> <span class="pill ok">52 · 52</span></p>
+          </div>
+        </div>
+        <p class="muted small" style="margin-top:14px">Esimerkki hylkäyksestä on offline-testeistä, koska oikea malli ei tuottanut yhtään: kirjoittaja sanoi 12, ratkaisija 24, joten syntyy <code>solve-back: writer said 12, solver said 24</code> ja uusi yritys. Kaikki 19 hyväksyttyä pulmaa ovat tiedostossa <code>agents/puzzle-agent/eval/eval-2026-09-23.md</code>.</p>
+      </div>
+    </section>
+
+    <!-- 6: loop -->
+    <section class="slide" aria-label="Loop engineering">
+      <div class="inner">
+        <p class="kicker">Viikon aihe · loop engineering</p>
+        <h2>Tehtävälista tiedostoon, ja työkalu ajaa kierrokset</h2>
+        <div class="grid g2">
+          <div class="card">
+            <h3>Miten</h3>
+            <ul class="clean">
+              <li><code>looppi.md</code>: askeleet, suojakaiteet ja tehtävälista</li>
+              <li><code>looppi-loki.md</code>: kierroksittain tehtävä, testit, tyypit, selain ja lopputulos</li>
+              <li>Jokainen muutos kulki <strong>spec → punainen testi → vihreä</strong>. Hyväksymiskriteerit kirjoitettiin ennen koodia.</li>
+              <li>Kahden peräkkäisen punaisen kierroksen jälkeen pysähdytään ja raportoidaan.</li>
+            </ul>
+          </div>
+          <div class="card warn">
+            <h3>Mitä looppi teki väärin</h3>
+            <p><strong>Neljä kierrosta meni bugiin, jota ei ollut olemassa.</strong> Selaintarkistukset mittasivat koko ajan viikon 1 repoa, joka vastasi samassa portissa.</p>
+            <p class="muted">Korjaus: smoke-skripti kysyy nyt dev-palvelimelta sen projektin juuren ja kieltäytyy ajamasta väärää repoa vasten.</p>
+            <p class="muted small">Toinen löydös: paikallaan seisova pelaaja ei saanut vastauspistettä, koska läheisyys laskettiin vain sijainnin muuttuessa. Kävellen tätä ei olisi huomattu koskaan.</p>
+          </div>
+        </div>
+        <div class="grid g4" style="margin-top:16px">
+          <div class="card"><div class="stat">16</div><div class="muted small">loopin kierrosta</div></div>
+          <div class="card"><div class="stat">21</div><div class="muted small">tehtävää valmiina</div></div>
+          <div class="card"><div class="stat">9</div><div class="muted small">feature-speciä</div></div>
+          <div class="card"><div class="stat">20</div><div class="muted small">selaintarkistusta, 0 virhettä</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7: today's fixes -->
+    <section class="slide" aria-label="Tänään korjattua">
+      <div class="inner">
+        <p class="kicker">Viimeisin kierros · 23.9.</p>
+        <h2>Neljä korjausta, kaikki TDD:llä</h2>
+        <table class="t">
+          <thead><tr><th>Mitä</th><th>Miksi</th><th>Todiste</th></tr></thead>
+          <tbody>
+            <tr><td><strong>API-avain agentin kansioon</strong></td><td>Kitin loader kävi läpi kaikki hakemistot tiedostojärjestelmän juureen asti ja latasi jokaisen <code>.env</code>-tiedoston. Pelkkä tiedoston siirto ei olisi muuttanut mitään.</td><td><span class="pill ok">AC16–17</span></td></tr>
+            <tr><td><strong>429 hylkää heti</strong></td><td>Kolme välitöntä uudelleenyritystä täynnä olevaan kiintiöön tuotti kolme hylkäystä yhden sijaan.</td><td><span class="pill ok">AC18–19</span></td></tr>
+            <tr><td><strong>Evalin parinmuodostus</strong></td><td>Kun kirjoittaja epäonnistui, jokainen myöhempi ratkaisijan vastaus kirjattiin edelliselle yritykselle.</td><td><span class="pill ok">AC20</span></td></tr>
+            <tr><td><strong>Tahditus ja uusintamittaus</strong></td><td><code>--delay</code> pitää ajon minuuttikiintiön sisällä, jotta mittaus kertoo pulmista.</td><td><span class="pill ok">AC21</span></td></tr>
+            <tr><td><strong><code>__pycache__</code> pois gitistä</strong></td><td>Jokainen testiajo muutti työpuuta.</td><td><span class="pill">siivous</span></td></tr>
+          </tbody>
+        </table>
+        <p class="muted small" style="margin-top:14px">Jokainen uusi testi kaatui ensin oikeasta syystä. Testi, joka meni heti läpi, todistettiin mutaatiolla: kun latausjärjestys käännettiin, se kaatui.</p>
+      </div>
+    </section>
+
+    <!-- 8: security -->
+    <section class="slide" aria-label="Tietosuoja ja turvallisuus">
+      <div class="inner">
+        <p class="kicker">Tietosuoja ja turvallisuus</p>
+        <h2>Sijainti ei lähde laitteelta</h2>
+        <div class="grid g2">
+          <div class="card accent">
+            <h3>Pelaajan sijainti</h3>
+            <ul class="clean small">
+              <li>Ei analytiikkaa, ei etälokitusta eikä kolmansia osapuolia.</li>
+              <li>Agentille lähtee vain <code>pair_id</code> eli tunniste commitoidusta tiedostosta. Agentti ei tiedä, missä piste on.</li>
+              <li>Omat pisteet ovat <code>points.local.json</code>-tiedostossa, joka on gitin ulkopuolella eikä sen arvoja tulosteta minnekään.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>"Fatal three": agentilla kaksi kolmesta</h3>
+            <table class="t small">
+              <tr><td>Pääsy yksityiseen dataan</td><td><span class="pill gold">kapea</span> vain oma API-avain, nyt vain omasta kansiosta</td></tr>
+              <tr><td>Luottamaton sisältö</td><td><span class="pill ok">ei ulkoa</span> mikään pyynnön kenttä ei päädy promptiin</td></tr>
+              <tr><td>Yhteys ulos</td><td><span class="pill no">kyllä</span> HTTPS Googlen API:in</td></tr>
+            </table>
+            <p class="muted small" style="margin-top:10px">Haku, URL-konteksti ja koodin suoritus jätettiin tarkoituksella pois. Mikä tahansa niistä tekisi tästä kolme kolmesta.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9: unverified -->
+    <section class="slide" aria-label="Mitä ei ole todennettu">
+      <div class="inner">
+        <p class="kicker">Rehellisesti</p>
+        <h2>Mitä ei ole todennettu</h2>
+        <div class="grid g3">
+          <div class="card warn">
+            <h3>AR ei ole koskaan ajettu laitteella</h3>
+            <p class="muted small">Yksikkötestit näyttävät, mitä komponentti pyytää Viroa piirtämään, mutta eivät sitä, miltä se näyttää. Web-build ei lataa Viroa ollenkaan, eikä iOS-simulaattori toimi Apple Siliconilla.</p>
+          </div>
+          <div class="card warn">
+            <h3>Agentin pulmaa ei ole nähty pelissä</h3>
+            <p class="muted small">Agentti toimii yksinään, ja peli toimii ilman agenttia. Koko ketjua agentista HTTP:n ja tilakoneen kautta näppäimistöön ei ole kävelty kertaakaan.</p>
+          </div>
+          <div class="card warn">
+            <h3>Puhelin ei löydä agenttia</h3>
+            <p class="muted small"><code>localhost</code> tarkoittaa puhelimessa puhelinta itseään. Laitteella peli käyttää aina paikallista generaattoria, kunnes osoite osoittaa kehityskoneeseen.</p>
+          </div>
+        </div>
+        <p class="lead" style="margin-top:22px">AGENTS.md:n määritelmä sanalle "toimii" on: ulkona, oikealla puhelimella ja oikealla GPS:llä, yksi piste ja yksi pulma alusta loppuun. <strong>Sitä ei ole vielä tehty.</strong></p>
+      </div>
+    </section>
+
+    <!-- 10: next -->
+    <section class="slide" aria-label="Seuraavaksi">
+      <div class="inner">
+        <p class="kicker">Seuraavaksi</p>
+        <h2>Kenttäkierros</h2>
+        <div class="grid g2">
+          <div class="card">
+            <ul class="clean">
+              <li><strong>1.</strong> <code>expo prebuild</code> ja asennus oikeaan puhelimeen</li>
+              <li><strong>2.</strong> Agentin osoitteeksi kehityskone samassa verkossa</li>
+              <li><strong>3.</strong> Aikaraja tai malli: 33 s vs 25 s, vai arvotaanko pulma etukäteen?</li>
+              <li><strong>4.</strong> Ulos: yksi pari, yksi pulma, alusta loppuun</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Missä mikäkin on</h3>
+            <table class="t small">
+              <tr><td><code>specs/features/</code></td><td>yksi spec per ominaisuus</td></tr>
+              <tr><td><code>kesken.md</code></td><td>mikä on todennettu ja millä</td></tr>
+              <tr><td><code>turvallisuus.md</code></td><td>"fatal three" -arvio</td></tr>
+              <tr><td><code>INBOX.md</code></td><td>kaikki huomattu, tietoisesti korjaamatta</td></tr>
+              <tr><td><code>agents/puzzle-agent/eval/</code></td><td>mittaukset</td></tr>
+            </table>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:22px">Kiitos!</p>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="bar" aria-label="Esityksen navigointi">
+    <button class="navbtn" id="prev" type="button" aria-label="Edellinen">←</button>
+    <button class="navbtn" id="next" type="button" aria-label="Seuraava">→</button>
+    <div class="progress"><i id="prog"></i></div>
+    <span class="hint">← → · välilyönti · F koko näyttö</span>
+    <span class="counter" id="counter">1 / 11</span>
+    <button class="navbtn theme-toggle" id="theme" type="button" aria-label="Vaihda teema">◐</button>
+  </nav>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- deck ---------- */
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('counter');
+  const prog = document.getElementById('prog');
+  let current = 0;
+
+  function show(index) {
+    current = Math.max(0, Math.min(slides.length - 1, index));
+    slides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === current);
+      slide.classList.toggle('past', i < current);
+      slide.setAttribute('aria-hidden', i === current ? 'false' : 'true');
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    prog.style.width = `${((current + 1) / slides.length) * 100}%`;
+    if (location.hash !== `#${current + 1}`) history.replaceState(null, '', `#${current + 1}`);
+  }
+
+  document.getElementById('prev').addEventListener('click', () => show(current - 1));
+  document.getElementById('next').addEventListener('click', () => show(current + 1));
+
+  const isTyping = (target) => target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+  const onGameSlide = () => slides[current].getAttribute('aria-label') === 'Demo: pelikierros';
+
+  document.addEventListener('keydown', (event) => {
+    if (isTyping(event.target) && event.target.type !== 'checkbox') return;
+    if (onGameSlide() && handleGameKey(event)) return;
+    if (['ArrowRight', 'PageDown'].includes(event.key) || (event.key === ' ' && !onGameSlide())) {
+      event.preventDefault(); show(current + 1);
+    } else if (['ArrowLeft', 'PageUp'].includes(event.key)) {
+      event.preventDefault(); show(current - 1);
+    } else if (event.key === 'Home') { show(0); }
+    else if (event.key === 'End') { show(slides.length - 1); }
+    else if (event.key === 'f' || event.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+  });
+
+  let touchX = null;
+  const stage = document.getElementById('stage');
+  stage.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  stage.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    touchX = null;
+    if (e.target.closest('.mapbox, .phone, .keypad')) return;
+    if (Math.abs(dx) > 60) show(current + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+
+  const start = parseInt((location.hash || '').slice(1), 10);
+  show(Number.isFinite(start) ? start - 1 : 0);
+
+  /* theme */
+  const root = document.documentElement;
+  document.getElementById('theme').addEventListener('click', () => {
+    const dark = root.dataset.theme
+      ? root.dataset.theme === 'dark'
+      : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('esitys-theme', root.dataset.theme); } catch (_) { /* no storage */ }
+  });
+  try { const saved = localStorage.getItem('esitys-theme'); if (saved) root.dataset.theme = saved; } catch (_) { /* no storage */ }
+
+  /* ---------- game demo ----------
+   * A small copy of the game's rules, not the game's code: a pair of
+   * points, proximity by radius, a puzzle collected at one point and
+   * answered at the other, a six-digit keypad. The map is an abstract
+   * grid — no real coordinates, on purpose. 1 map unit = 1 metre.
+   */
+  const RADIUS = 40;
+  const PUZZLE_POINT = { x: 90, y: 175 };
+  const ANSWER_POINT = { x: 315, y: 75 };
+  const START = { x: 40, y: 40 };
+  const MAX_DIGITS = 6;
+
+  // Puzzles the live agent actually wrote in the 2026-09-23 eval.
+  const AGENT_PUZZLES = [
+    { text: 'Arkeologiryhmä saapuu muinaiseen hautakammioon. Ennen tutkimusten aloittamista kaikki ryhmän jäsenet kättelevät toisiaan tasan kerran. Kammiossa tapahtuu yhteensä 45 kättelyä. Kuinka monta arkeologia ryhmässä on?', answer: 10 },
+    { text: 'Hullun tiedemiehen laboratoriossa on mekaanisia hämähäkkejä (8 jalkaa) ja robottikuoriaisia (6 jalkaa). Robotteja on yhteensä 15, ja niillä on yhteensä 104 jalkaa. Kuinka monta hämähäkkiä laboratoriossa on?', answer: 7 },
+    { text: 'Kauppias korottaa avaimen hintaa ensin 50 prosentilla ja antaa sitten korotetusta hinnasta 40 prosentin alennuksen. Lopullinen hinta on 18 hopearahaa. Mikä oli alkuperäinen hinta?', answer: 20 },
+    { text: 'Seikkailijakillan salissa on 40 soturia. Heistä 25:llä on miekka ja 18:lla kilpi, ja 8:lla ei ole kumpaakaan. Kuinka monella on sekä miekka että kilpi?', answer: 11 },
+  ];
+
+  const svg = document.getElementById('mapsvg');
+  const playerEl = document.getElementById('player');
+  const pPuzzle = document.getElementById('pPuzzle');
+  const pAnswer = document.getElementById('pAnswer');
+  const rPuzzle = document.getElementById('rPuzzle');
+  const rAnswer = document.getElementById('rAnswer');
+  const screenEl = document.getElementById('screen');
+  const stateLabel = document.getElementById('stateLabel');
+  const gpsLabel = document.getElementById('gpsLabel');
+  const gameLog = document.getElementById('gameLog');
+  const agentOn = document.getElementById('agentOn');
+
+  pPuzzle.setAttribute('transform', `translate(${PUZZLE_POINT.x} ${PUZZLE_POINT.y})`);
+  pAnswer.setAttribute('transform', `translate(${ANSWER_POINT.x} ${ANSWER_POINT.y})`);
+  rPuzzle.setAttribute('r', RADIUS);
+  rAnswer.setAttribute('r', RADIUS);
+
+  let game;
+  let puzzleIndex = 0;
+  let walkTimer = null;
+
+  function reset() {
+    game = { player: { ...START }, screen: 'MAP', collected: false, puzzle: null, input: '', solved: false };
+    clearInterval(walkTimer);
+    gameLog.textContent = '';
+    render();
+  }
+
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+  /** Which point, if any, offers itself — the same question the state machine asks. */
+  function nearPoint() {
+    if (!game.collected && dist(game.player, PUZZLE_POINT) <= RADIUS) return 'puzzle';
+    if (game.collected && !game.solved && dist(game.player, ANSWER_POINT) <= RADIUS) return 'answer';
+    return null;
+  }
+
+  function locationChanged() {
+    if (game.screen === 'MAP' || game.screen === 'NEAR') {
+      game.screen = nearPoint() ? 'NEAR' : 'MAP';
+    }
+    render();
+  }
+
+  function drawPuzzle() {
+    if (agentOn.checked) {
+      const p = AGENT_PUZZLES[puzzleIndex % AGENT_PUZZLES.length];
+      puzzleIndex += 1;
+      gameLog.textContent = 'Pulma: agentti (kirjoitettu ja tarkistettu oikeaa mallia vasten 23.9.)';
+      return { ...p, source: 'agentti' };
+    }
+    const a = 2 + Math.floor(Math.random() * 8);
+    const b = 2 + Math.floor(Math.random() * 8);
+    gameLog.textContent = 'Agentti ei vastannut, joten käytössä on paikallinen pulma. Peli kertoo tästä, eikä pelaaja jää jumiin.';
+    return { text: `${a} + ${b} = ?`, answer: a + b, source: 'paikallinen' };
+  }
+
+  function openPoint() {
+    const which = nearPoint();
+    if (which === 'puzzle') {
+      game.puzzle = drawPuzzle();
+      game.collected = true;
+      game.screen = 'PUZZLE';
+    } else if (which === 'answer') {
+      game.input = '';
+      game.screen = 'ANSWER';
+    }
+    render();
+  }
+
+  function closePuzzle() {
+    game.screen = 'MAP';
+    // Re-dispatch the last known position: a player standing still is
+    // offered the answer point without having to move (pair-flow AC29).
+    locationChanged();
+  }
+
+  function press(key) {
+    if (game.screen !== 'ANSWER') return;
+    if (key === 'del') game.input = game.input.slice(0, -1);
+    else if (key === 'ok') return submit();
+    else if (game.input.length < MAX_DIGITS) game.input += key;
+    render();
+  }
+
+  function submit() {
+    if (!game.input) return;
+    if (Number(game.input) === game.puzzle.answer) {
+      game.solved = true;
+      game.screen = 'SOLVED';
+      render();
+      fanfare();
+    } else {
+      game.input = '';
+      render();
+      const d = screenEl.querySelector('.display');
+      if (d) { d.textContent = 'VÄÄRIN'; d.classList.add('shake'); }
+      setTimeout(render, 700);
+    }
+  }
+
+  function render() {
+    playerEl.setAttribute('transform', `translate(${game.player.x} ${game.player.y})`);
+    pAnswer.style.opacity = game.collected ? '1' : '0';
+    pAnswer.style.transition = 'opacity .5s';
+    pPuzzle.style.opacity = game.collected ? '.35' : '1';
+    stateLabel.textContent = game.screen;
+    const near = nearPoint();
+    const target = !game.collected ? PUZZLE_POINT : ANSWER_POINT;
+    gpsLabel.textContent = game.solved ? 'GPS · valmis' : `GPS · ${Math.round(dist(game.player, target))} m ${game.collected ? 'vastauspisteelle' : 'pulmapisteelle'}`;
+
+    let html = '';
+    if (game.screen === 'MAP') {
+      html = `<p class="muted">${game.collected
+        ? 'Pulma on kerätty. Kävele vastauspisteelle.'
+        : 'Kävele pulmapisteen katkoviivan sisään.'}</p>`;
+      if (game.collected && game.puzzle) html += `<div class="puzzle-text small">${escapeHtml(game.puzzle.text)}</div>`;
+    } else if (game.screen === 'NEAR') {
+      html = `<p><strong>${near === 'puzzle' ? 'Olet pulmapisteellä.' : 'Olet vastauspisteellä.'}</strong></p>
+        <p class="muted small">${near === 'puzzle' ? 'Puhelimessa pulma näkyy tekstinä.' : 'Puhelimessa kameran päälle ankkuroituu AR-paneeli.'}</p>
+        <button class="btn" id="openBtn" type="button">${near === 'puzzle' ? 'Näytä pulma' : 'Avaa paneeli'}</button>`;
+    } else if (game.screen === 'PUZZLE') {
+      html = `<span class="pill ${game.puzzle.source === 'agentti' ? 'ok' : 'gold'}">${game.puzzle.source}</span>
+        <div class="puzzle-text" style="margin-top:8px">${escapeHtml(game.puzzle.text)}</div>
+        <p class="muted small">Tässä ei ole näppäimistöä. Vastaus syötetään toisella pisteellä.</p>
+        <button class="btn" id="closeBtn" type="button">Takaisin kartalle</button>`;
+    } else if (game.screen === 'ANSWER') {
+      html = `<div class="display" aria-label="Syötetty koodi">${game.input || '&nbsp;'}</div>
+        <div class="keypad">
+          ${['1','2','3','4','5','6','7','8','9','del','0','ok'].map((k) =>
+            `<button class="key ${k === 'ok' ? 'ok' : ''}" data-key="${k}" type="button" aria-label="${k === 'del' ? 'Poista' : k === 'ok' ? 'Vahvista' : k}">${k === 'del' ? '⌫' : k === 'ok' ? 'OK' : k}</button>`).join('')}
+        </div>`;
+    } else if (game.screen === 'SOLVED') {
+      html = `<div class="solved"><div class="big">🎉</div><h3>Onneksi olkoon!</h3><p class="muted small">Oikea koodi: ${game.puzzle.answer}</p>
+        <button class="btn ghost" id="againBtn" type="button">Uusi kierros</button></div>`;
+    }
+    screenEl.innerHTML = html;
+    screenEl.querySelector('#openBtn')?.addEventListener('click', openPoint);
+    screenEl.querySelector('#closeBtn')?.addEventListener('click', closePuzzle);
+    screenEl.querySelector('#againBtn')?.addEventListener('click', reset);
+    screenEl.querySelectorAll('.key').forEach((b) => b.addEventListener('click', () => press(b.dataset.key)));
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function walkTo(target) {
+    clearInterval(walkTimer);
+    walkTimer = setInterval(() => {
+      const dx = target.x - game.player.x;
+      const dy = target.y - game.player.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 3) { game.player = { ...target }; clearInterval(walkTimer); locationChanged(); return; }
+      const step = Math.min(6, d);
+      game.player = { x: game.player.x + (dx / d) * step, y: game.player.y + (dy / d) * step };
+      locationChanged();
+    }, 30);
+  }
+
+  svg.addEventListener('click', (event) => {
+    const pt = svg.createSVGPoint();
+    pt.x = event.clientX; pt.y = event.clientY;
+    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    walkTo({ x: Math.max(8, Math.min(392, p.x)), y: Math.max(8, Math.min(252, p.y)) });
+  });
+
+  function handleGameKey(event) {
+    const moves = { w: [0, -10], a: [-10, 0], s: [0, 10], d: [10, 0] };
+    const k = event.key.toLowerCase();
+    if (moves[k]) {
+      clearInterval(walkTimer);
+      game.player = {
+        x: Math.max(8, Math.min(392, game.player.x + moves[k][0])),
+        y: Math.max(8, Math.min(252, game.player.y + moves[k][1])),
+      };
+      locationChanged();
+      return true;
+    }
+    if (game.screen === 'ANSWER') {
+      if (/^[0-9]$/.test(event.key)) { press(event.key); return true; }
+      if (event.key === 'Backspace') { press('del'); return true; }
+      if (event.key === 'Enter') { press('ok'); return true; }
+    }
+    if (event.key === 'Enter' && game.screen === 'NEAR') { openPoint(); return true; }
+    return false;
+  }
+
+  document.getElementById('resetGame').addEventListener('click', reset);
+
+  let audio;
+  function fanfare() {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, i) => {
+        const t = audio.currentTime + i * 0.13;
+        const o = audio.createOscillator();
+        const g = audio.createGain();
+        o.type = 'triangle';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + (i === notes.length - 1 ? 0.7 : 0.18));
+        o.connect(g).connect(audio.destination);
+        o.start(t); o.stop(t + 0.75);
+      });
+    } catch (_) { /* no audio: the congratulation still shows */ }
+  }
+
+  reset();
+
+  /* ---------- agent demo ----------
+   * Scripted, not live: four draws that show each branch of the loop in
+   * puzzle_core.py, with the reason strings the real code produces.
+   */
+  const SCENARIOS = [
+    {
+      label: 'Tavallinen arvonta',
+      attempts: [
+        { text: 'Kaikki ryhmän jäsenet kättelevät toisiaan tasan kerran. Kättelyjä on 45. Montako jäsentä ryhmässä on?', answer: 10, solver: 10, fail: null },
+      ],
+    },
+    {
+      label: 'Ratkaisija on eri mieltä',
+      attempts: [
+        { text: 'Junassa on 3 vaunua ja jokaisessa 4 osastoa. Montako ikkunaa junassa on?', answer: 12, solver: 24, fail: { step: 'compare', reason: 'solve-back: writer said 12, solver said 24' } },
+        { text: 'Tavarajuna on 200 m pitkä ja kulkee 15 m/s. Se kulkee tunnelin läpi 40 sekunnissa. Kuinka pitkä tunneli on?', answer: 400, solver: 400, fail: null },
+      ],
+    },
+    {
+      label: 'Toisto aiemmasta',
+      attempts: [
+        { text: 'Kaikki ryhmän jäsenet kättelevät toisiaan kerran. Kättelyjä on yhteensä 45. Montako jäsentä ryhmässä on?', answer: 10, solver: null, fail: { step: 'dup', reason: 'duplicate: too close to a puzzle already given' } },
+        { text: 'Sussu söi 4 makeista, antoi kolmasosan loppuista ystävälle, pudotti 2 ja jakoi loput kolmelle, 6 kullekin. Montako makeista oli alussa?', answer: 34, solver: 34, fail: null },
+      ],
+    },
+    {
+      label: 'Kiintiö täynnä (uusi 23.9.)',
+      attempts: [
+        { text: null, answer: null, solver: null, fail: { step: 'write', reason: 'quota: request limit reached, not retried — 429 RESOURCE_EXHAUSTED', final: true } },
+      ],
+    },
+  ];
+  let scenarioIndex = 0;
+  let running = false;
+  const flowSteps = Array.from(document.querySelectorAll('#flow .step'));
+  const draftEl = document.getElementById('draft');
+  const verdictEl = document.getElementById('verdict');
+  const drawBtn = document.getElementById('drawBtn');
+  const scenarioLabel = document.getElementById('scenarioLabel');
+  const ORDER = ['write', 'schema', 'dup', 'solve', 'compare'];
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function mark(step, cls) {
+    flowSteps.forEach((el) => { if (el.dataset.step === step) { el.classList.remove('on', 'fail'); if (cls) el.classList.add(cls); } });
+  }
+  function clearFlow() { flowSteps.forEach((el) => el.classList.remove('on', 'fail')); }
+
+  async function runScenario() {
+    if (running) return;
+    running = true; drawBtn.disabled = true;
+    const scenario = SCENARIOS[scenarioIndex % SCENARIOS.length];
+    scenarioIndex += 1;
+    scenarioLabel.textContent = scenario.label;
+    verdictEl.textContent = ''; verdictEl.className = 'verdict';
+
+    for (let i = 0; i < scenario.attempts.length; i += 1) {
+      const a = scenario.attempts[i];
+      clearFlow();
+      draftEl.innerHTML = `<span class="muted small">Yritys ${i + 1} / 3 · kirjoitetaan…</span>`;
+      for (const step of ORDER) {
+        await wait(420);
+        if (a.fail && a.fail.step === step) {
+          mark(step, 'fail');
+          if (step !== 'write') draftEl.innerHTML = `<span class="muted small">Yritys ${i + 1} / 3</span><br>${escapeHtml(a.text)} <span class="pill">kirjoittaja: ${a.answer}</span>${a.solver !== null ? ` <span class="pill no">ratkaisija: ${a.solver}</span>` : ''}`;
+          verdictEl.className = 'verdict no';
+          verdictEl.innerHTML = `<span class="mono">${escapeHtml(a.fail.reason)}</span>`;
+          if (a.fail.final) { verdictEl.innerHTML += '<br><span class="muted small">Pyyntö hylätään heti. Peli käyttää paikallista pulmaa ja kertoo siitä.</span>'; }
+          await wait(1100);
+          break;
+        }
+        mark(step, 'on');
+        if (step === 'write') draftEl.innerHTML = `<span class="muted small">Yritys ${i + 1} / 3</span><br>${escapeHtml(a.text)} <span class="pill">kirjoittaja: ${a.answer}</span>`;
+        if (step === 'solve') draftEl.innerHTML += ` <span class="pill ok">ratkaisija: ${a.solver}</span>`;
+      }
+      if (!a.fail) {
+        verdictEl.className = 'verdict ok';
+        verdictEl.textContent = `Hyväksytty ${i + 1}. yrityksellä ja tallennettu muistiin.`;
+        break;
+      }
+      if (a.fail.final) break;
+    }
+    running = false; drawBtn.disabled = false;
+    drawBtn.textContent = 'Arvo seuraava';
+  }
+  drawBtn.addEventListener('click', runScenario);
+})();
+</script>
+</body>
+</html>
