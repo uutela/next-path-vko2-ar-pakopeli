@@ -559,3 +559,28 @@ when an event returns the player to the map. `pair-flow.md` AC29, commit
 
 → 171 tests, `npx tsc --noEmit` exit 0, 19 browser checks with 0 console and 0
 page errors.
+
+## Fixes
+
+### 19 — where the key lives
+> Meidän agentin käyttämä gemini api key on rootin .env.local -tiedostossa, kun
+> sen kannattaisi varmaan olla agent hakemistossa. Korjaa, jos näin
+
+> siirrän. Laitan sinne myös uuden api-keyn samalla. Tee kohta 2
+
+→ Moving the file alone would have changed nothing: `agent_env.py`, copied
+from the kit, walked from the agent folder to the filesystem root and loaded
+every `.env` and `.env.local` on the way, so the root file was found by the
+same walk that would find anything in a home directory. The key was moved by
+hand — env files are off limits to the assistant — and the loader now reads
+the agent's own folder only. `puzzle-agent.md` AC16 (a parent's key is not
+loaded, red first for the right reason: `from-parent` arrived) and AC17 (its
+own `.env.local` wins over `.env`, a test that passed at once and was shown to
+fail by swapping the order). 40 agent tests, 180 unit tests,
+`npx tsc --noEmit` exit 0; the agent sees a key from its new place.
+
+> rootissa ei enää .env.local:ia. Ja postin turhan tyhjän avaimen rootin
+> .env-tiedostosta. Local-tiedosto nyt puzzle-agentissa
+
+→ The root holds no key at all now, empty or otherwise. The agent's only
+source is its own `.env.local`.

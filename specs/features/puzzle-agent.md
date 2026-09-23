@@ -97,7 +97,8 @@ was the thing that was wrong.
 
 This criterion exists because the suite went online once: deleting
 `GEMINI_API_KEY` does not work, since importing a subagent runs
-`load_agent_environment()` and loads `.env.local` from a parent directory.
+`load_agent_environment()` and loads `.env.local` — then a parent
+directory's, since AC16 the agent folder's own.
 
 ### AC12: The game gets the puzzle the agent drew
 **Given** an agent answering `{ ok: true, puzzle: { text, answer } }`
@@ -127,6 +128,21 @@ is indistinguishable from an agent that works.
 The agent is one more source. `validating()` does not care which source it is
 talking to — that is why it wraps this one too.
 
+### AC16: A key above the agent folder is not loaded
+**Given** a parent directory whose `.env.local` sets `GEMINI_API_KEY=from-parent`, an agent folder beneath it with no env file, and the variable absent from the process
+**When** `load_agent_environment(agent_dir)` runs
+**Then** `GEMINI_API_KEY` is still absent from `os.environ`
+
+The loader came from the kit and walked from the agent folder to the
+filesystem root, loading every `.env` and `.env.local` on the way. The agent
+needs one value; the walk handed a program that talks to a third party
+whatever those files held, on whichever machine it ran.
+
+### AC17: The agent folder's own `.env.local` is loaded
+**Given** an agent folder whose `.env` sets `GEMINI_API_KEY=from-env` and whose `.env.local` sets `GEMINI_API_KEY=from-local`
+**When** `load_agent_environment(agent_dir)` runs
+**Then** `os.environ["GEMINI_API_KEY"]` is `from-local`
+
 ## Files to Modify
 | File | Change |
 |---|---|
@@ -143,6 +159,12 @@ talking to — that is why it wraps this one too.
 | `src/config/agent.ts` | New. Endpoint and timeout |
 | `App.tsx` | Builds the agent source with the local generator as fallback |
 | `scripts/browser-smoke.mjs` | Checks that an absent agent still produces a puzzle |
+| `agents/puzzle-agent/agent_env.py` | Loads `.env` then `.env.local` from the agent folder only; the folder is a parameter (AC16, AC17) |
+| `agents/puzzle-agent/tests/test_agent_env.py` | New. AC16, AC17 |
+| `agents/puzzle-agent/tests/test_agent_offline.py` | Docstring no longer says a parent `.env.local` is loaded |
+| `README.md` | The key lives in `agents/puzzle-agent/.env.local`; agent test count |
+| `INBOX.md` | The walk-to-root note marked resolved |
+| `turvallisuus.md` | The env loader's scope, as it is now |
 
 ## Risk
 - **The criteria are proven against fakes; the live model is proven three
@@ -165,6 +187,10 @@ talking to — that is why it wraps this one too.
 - **The player's location never reaches the agent.** The only thing sent is
   `pair_id`, which is an identifier from a committed file. AGENTS.md is
   explicit about this and it is why the agent is not told where the point is.
+- **A key left in the root `.env.local` stops working.** After AC16 the agent
+  refuses with `no Gemini API key` until the key is in
+  `agents/puzzle-agent/.env.local` or exported in the shell. Visible, not
+  silent — AC8 is what the player sees.
 - **Rollback:** point `App.tsx` back at `createLocalPuzzleSource(Math.random)`.
   The agent is a separate process and a separate folder; nothing in `domain/`
   knows it exists.
@@ -195,6 +221,8 @@ talking to — that is why it wraps this one too.
 | `createAgentPuzzleSource` | edge case | agent and fallback both refuse | `draw` | the fallback's refusal, not the agent's |
 | `api` | happy path | `GET /health` | called | `200 {"status": "ok"}` |
 | `api` | error case | no key | `POST /puzzle` | `200` with `ok: false` and a reason |
+| `load_agent_environment` | property | key only in a parent `.env.local` | called on the child | variable absent (AC16) |
+| `load_agent_environment` | happy path | `.env` and `.env.local` in the agent folder | called | `.env.local` wins (AC17) |
 
 ## Spec Readiness checklist
 - [x] Every AC has a precise expected value — no "works correctly"

@@ -17,7 +17,7 @@ changed the verdict.
 
 | Part | 1. Private data | 2. Untrusted content | 3. Outward channel | What it actually does |
 |---|---|---|---|---|
-| `agent_env.py` | **yes** | no | no | Loads `.env` and `.env.local` **from every parent directory up to the filesystem root** |
+| `agent_env.py` | **yes** | no | no | Loads `.env` and `.env.local` from the agent folder only (until 2026-09-23: **from every parent directory up to the filesystem root**) |
 | `puzzle_core.py` | no | no | no | Pure functions. No files, no network, no `genai` import at all |
 | `puzzle_agent.py` | no | no | no | Orchestration. Calls the core, the memory and the two subagents |
 | `subagents/puzzle_writer.py` | no | see §3 | **yes** | HTTPS to Google's Gemini API |
@@ -121,7 +121,7 @@ with anything else.
 
 | | Met | On what basis |
 |---|---|---|
-| 1. Access to private data | **yes, narrowly** | `agent_env.py` loads `.env` and `.env.local` from every parent directory up to the root. On this machine that is two files from the repository root; on another it is whatever happens to sit on the path. The agent needs one value out of them. It does not read the game's data at all |
+| 1. Access to private data | **yes, narrowly** | `agent_env.py` loads `.env` and `.env.local` from the agent folder only, where the key now lives. Until 2026-09-23 it loaded every parent directory up to the root — on another machine, whatever happened to sit on the path. It does not read the game's data at all |
 | 2. Exposure to untrusted content | **not from outside** | No request field reaches a prompt. No search, no URL fetching, no player text. The model's own output travels into prompts by two routes (§3), which is the weak, self-referential form of this property — not attacker-controlled content |
 | 3. Ability to communicate outward | **yes** | HTTPS to Google's API. File writes inside its own folder only |
 
@@ -153,7 +153,8 @@ Any one of these would do it, and the first two would be easy to do by accident:
 No code was touched. Three entries in `INBOX.md`:
 
 1. `agent_env.py` walks to the filesystem root and loads every environment file
-   it finds, though the agent needs one key.
+   it finds, though the agent needs one key. *Fixed 2026-09-23 —
+   `puzzle-agent.md` AC16, AC17.*
 2. The model's output returns to a prompt by two routes, and the memory file is
    a prompt-injection surface if anything else can write to it.
 3. The kit's own examples advertise search, URL context and code execution;

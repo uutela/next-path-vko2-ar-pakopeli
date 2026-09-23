@@ -43,11 +43,13 @@ the arithmetic generator and says so in the console:
     agents/puzzle-agent/.venv/bin/python -m pytest agents/puzzle-agent/tests
 
 The agent's tests pass offline with no API key. A live model needs
-`GEMINI_API_KEY` in `.env.local`, which is gitignored.
+`GEMINI_API_KEY` in `agents/puzzle-agent/.env.local`, which is gitignored. The
+agent reads env files from its own folder only; a key in the repository root
+is not seen.
 
 ## What is verified, and what is not
 
-Verified: 180 unit tests, 38 agent tests offline, 20 browser checks with no
+Verified: 180 unit tests, 40 agent tests offline, 20 browser checks with no
 console or page errors, and seven real puzzles drawn against a live model.
 
 **Not verified: the AR half has never run on a device, and the agent's puzzles
